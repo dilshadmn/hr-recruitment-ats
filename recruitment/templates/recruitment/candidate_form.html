@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Candidate{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card app-card p-4">
+      <h4 class="mb-3">{% if object %}Edit Candidate{% else %}Add Candidate{% endif %}</h4>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Full Name</label>
+            {{ form.full_name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            {{ form.email }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            {{ form.phone }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Role</label>
+            {{ form.role }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">CV</label>
+            {{ form.cv }}
+            {% if object.cv %}
+              <div class="small mt-1"><a href="{{ object.cv.url }}" target="_blank">Current file</a></div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Source</label>
+            {{ form.source }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Experience (years)</label>
+            {{ form.experience }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Notice Period</label>
+            {{ form.notice_period }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Expected Salary</label>
+            {{ form.expected_salary }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Remarks</label>
+            {{ form.remarks }}
+          </div>
+        </div>
+        {% for field in form %}
+          {% for error in field.errors %}<div class="text-danger small">{{ field.label }}: {{ error }}</div>{% endfor %}
+        {% endfor %}
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-fill-app">Save</button>
+          <a href="{% if object %}{% url 'candidate_detail' object.id %}{% else %}{% url 'candidate_list' %}{% endif %}"
+             class="btn btn-outline-app">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load recruitment_extras %}
+{% block title %}{{ candidate.full_name }} - Candidate Detail{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">{{ candidate.full_name }}</h3>
+  <div>
+    <span class="{{ candidate.current_status|badge_class }}">{{ candidate.get_current_status_display }}</span>
+    {% if candidate.duplicate_flag %}<span class="badge-dup ms-2">Duplicate</span>{% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Candidate Details</h5>
+      <dl class="row mb-0">
+        <dt class="col-sm-4">Email</dt><dd class="col-sm-8">{{ candidate.email }}</dd>
+        <dt class="col-sm-4">Phone</dt><dd class="col-sm-8">{{ candidate.phone|default:"-" }}</dd>
+        <dt class="col-sm-4">Role</dt><dd class="col-sm-8">{{ candidate.role.title|default:"-" }}</dd>
+        <dt class="col-sm-4">Source</dt><dd class="col-sm-8">{{ candidate.source|default:"-" }}</dd>
+        <dt class="col-sm-4">Experience</dt><dd class="col-sm-8">{{ candidate.experience|default:"-" }}</dd>
+        <dt class="col-sm-4">Notice Period</dt><dd class="col-sm-8">{{ candidate.notice_period|default:"-" }}</dd>
+        <dt class="col-sm-4">Expected Salary</dt><dd class="col-sm-8">{{ candidate.expected_salary|default:"-" }}</dd>
+        <dt class="col-sm-4">Applied On</dt><dd class="col-sm-8">{{ candidate.applied_at|date:"d M Y H:i" }}</dd>
+        <dt class="col-sm-4">Last Updated</dt><dd class="col-sm-8">{{ candidate.updated_at|date:"d M Y H:i" }}</dd>
+        {% if candidate.blacklist_reason %}
+        <dt class="col-sm-4">Blacklist Reason</dt><dd class="col-sm-8">{{ candidate.blacklist_reason }}</dd>
+        {% endif %}
+        <dt class="col-sm-4">Remarks</dt><dd class="col-sm-8">{{ candidate.remarks|default:"-" }}</dd>
+      </dl>
+    </div>
+
+    <div class="card app-card p-4">
+      <h5 class="mb-3">CV</h5>
+      {% if candidate.cv %}
+        <a href="{{ candidate.cv.url }}" target="_blank" class="btn btn-outline-app btn-sm">
+          <i class="bi bi-file-earmark-arrow-down"></i> Download / Preview CV
+        </a>
+      {% else %}
+        <p class="text-muted mb-0">No CV uploaded.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Actions</h5>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'candidate_edit' candidate.id %}" class="btn btn-outline-app btn-sm">Edit</a>
+        {% if candidate.current_status == 'NEW' or candidate.current_status == 'REAPPLY' %}
+        <form method="post" action="{% url 'candidate_review' candidate.id %}">
+          {% csrf_token %}<input type="hidden" name="next" value="{% url 'candidate_detail' candidate.id %}">
+          <button class="btn btn-primary-app btn-sm">Move to Review</button>
+        </form>
+        {% endif %}
+        {% if candidate.current_status == 'UNDER_REVIEW' %}
+        <form method="post" action="{% url 'candidate_shortlist' candidate.id %}">
+          {% csrf_token %}<input type="hidden" name="next" value="{% url 'candidate_detail' candidate.id %}">
+          <button class="btn btn-fill-app btn-sm">Shortlist</button>
+        </form>
+        <form method="post" action="{% url 'candidate_reject' candidate.id %}" onsubmit="return confirm('Reject this candidate?');">
+          {% csrf_token %}<input type="hidden" name="next" value="{% url 'candidate_detail' candidate.id %}">
+          <button class="btn btn-outline-danger btn-sm">Reject</button>
+        </form>
+        {% endif %}
+        {% if candidate.current_status == 'SHORTLISTED' %}
+        <form method="post" action="{% url 'candidate_hire' candidate.id %}" onsubmit="return confirm('Mark as hired?');">
+          {% csrf_token %}<input type="hidden" name="next" value="{% url 'candidate_detail' candidate.id %}">
+          <button class="btn btn-fill-app btn-sm">Hire</button>
+        </form>
+        <form method="post" action="{% url 'candidate_reject' candidate.id %}" onsubmit="return confirm('Final reject this candidate?');">
+          {% csrf_token %}<input type="hidden" name="next" value="{% url 'candidate_detail' candidate.id %}">
+          <button class="btn btn-outline-danger btn-sm">Final Reject</button>
+        </form>
+        {% endif %}
+        {% if candidate.current_status in 'UNDER_REVIEW,SHORTLISTED' %}
+        <button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#blacklistModal">Blacklist</button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card app-card p-4">
+      <h5 class="mb-3">Status History</h5>
+      {% for h in history %}
+      <div class="timeline-item">
+        <div class="fw-semibold">{{ h.old_status|default:"—" }} &rarr; {{ h.new_status }}</div>
+        <div class="small text-muted">{{ h.changed_at|date:"d M Y H:i" }} by {{ h.changed_by|default:"System" }}</div>
+      </div>
+      {% empty %}
+      <p class="text-muted mb-0">No history recorded yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="blacklistModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="post" action="{% url 'candidate_blacklist' candidate.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'candidate_detail' candidate.id %}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Blacklist candidate</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">Reason</label>
+          <textarea name="blacklist_reason" class="form-control" rows="3" required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-app" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-dark">Blacklist</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

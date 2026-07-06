@@ -1,0 +1,125 @@
+"""
+Django settings for HR_management project.
+"""
+
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-af^fer9mep9gg^j6q_c(a%%63)&)5292q5ihgs&lm^7$g#xq)9",
+)
+
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()]
+
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.humanize',
+    'recruitment',
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+ROOT_URLCONF = 'HR_management.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'HR_management.wsgi.application'
+
+
+# Database
+# Defaults to SQLite so `migrate && runserver` works with zero setup.
+# Set DB_ENGINE=postgres (+ DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT) to
+# switch to PostgreSQL, or use an Azure SQL compatible ODBC engine the same way.
+if os.environ.get("DB_ENGINE", "sqlite") == "postgres":
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get("DB_NAME", "hr_recruitment"),
+            'USER': os.environ.get("DB_USER", "postgres"),
+            'PASSWORD': os.environ.get("DB_PASSWORD", ""),
+            'HOST': os.environ.get("DB_HOST", "localhost"),
+            'PORT': os.environ.get("DB_PORT", "5432"),
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'Asia/Kolkata'
+USE_I18N = True
+USE_TZ = True
+
+
+# Static files
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Media (CV uploads) - local for now, swap the storage backend for Azure Blob later.
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+
+# Path to the SharePoint-exported Excel workbook used by import_candidates
+# and sync_sharepoint. Defaults to the file placed next to the project root.
+CENTRAL_REPOSITORY_XLSX = os.environ.get(
+    "CENTRAL_REPOSITORY_XLSX",
+    str(BASE_DIR.parent / "Central Repository.xlsx"),
+)
+
+# SharePoint site/creds used only by recruitment/sharepoint_sync.py
+SHAREPOINT_SITE_URL = os.environ.get("SHAREPOINT_SITE_URL", "")
+SHAREPOINT_USERNAME = os.environ.get("SHAREPOINT_USERNAME", "")
+SHAREPOINT_PASSWORD = os.environ.get("SHAREPOINT_PASSWORD", "")
+SHAREPOINT_FILE_URL = os.environ.get("SHAREPOINT_FILE_URL", "")

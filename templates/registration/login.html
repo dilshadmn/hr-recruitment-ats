@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Login - HR Recruitment Portal{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-4">
+    <div class="card app-card p-4">
+      <h4 class="mb-3 text-center">Sign in</h4>
+      {% if form.errors %}
+        <div class="alert alert-danger">Invalid username or password.</div>
+      {% endif %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-control" required autofocus>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-control" required>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn-primary-app w-100">Login</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

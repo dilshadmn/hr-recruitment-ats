@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Roles - HR Recruitment Portal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Roles</h3>
+  <a href="{% url 'role_add' %}" class="btn btn-fill-app btn-sm"><i class="bi bi-plus-lg"></i> Add Role</a>
+</div>
+
+<div class="card app-card p-3">
+  <div class="table-responsive">
+    <table id="roleTable" class="table table-hover align-middle w-100">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Department</th>
+          <th>Location</th>
+          <th>Active</th>
+          <th>Open Candidates</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for role in roles %}
+        <tr>
+          <td>{{ role.title }}</td>
+          <td>{{ role.department|default:"-" }}</td>
+          <td>{{ role.location|default:"-" }}</td>
+          <td>
+            {% if role.is_active %}
+              <span class="badge-status badge-shortlisted">Active</span>
+            {% else %}
+              <span class="badge-status badge-blacklisted">Inactive</span>
+            {% endif %}
+          </td>
+          <td>{{ role.open_candidate_count }}</td>
+          <td>{{ role.created_at|date:"d M Y" }}</td>
+          <td class="text-nowrap">
+            <a href="{% url 'role_edit' role.id %}" class="btn btn-sm btn-outline-app">Edit</a>
+            <form method="post" action="{% url 'role_delete' role.id %}" class="d-inline"
+                  onsubmit="return confirm('Delete this role?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function () {
+  $('#roleTable').DataTable({ order: [] });
+});
+</script>
+{% endblock %}
