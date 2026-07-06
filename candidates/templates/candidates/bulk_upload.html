@@ -1,0 +1,27 @@
+{% extends "hr_base.html" %}
+{% block title %}Bulk Upload CV{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card app-card p-4">
+      <h4 class="mb-3">Bulk Upload CV</h4>
+      <ol class="text-muted small">
+        <li>Select the vacancy and source</li>
+        <li>Upload one or more CV files</li>
+        <li>Edit each candidate's details on the next screen</li>
+        <li>Confirm to add them to the Candidate Repository</li>
+      </ol>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3"><label class="form-label">Vacancy</label>{{ form.job }}</div>
+        <div class="mb-3"><label class="form-label">Source</label>{{ form.source }}</div>
+        <div class="mb-3">
+          <label class="form-label">CV Files</label>
+          <input type="file" name="cvs" multiple class="form-control" accept=".pdf,.doc,.docx" required>
+        </div>
+        <button type="submit" class="btn btn-fill-app">Upload</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

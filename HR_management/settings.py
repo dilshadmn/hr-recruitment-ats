@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'jobs',
     'candidates',
+    'interviews',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -109,5 +111,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'admin:index'  # HR admin dashboard lands here once Phase 2 rebuilds it
+LOGIN_REDIRECT_URL = 'hr_dashboard'
 LOGOUT_REDIRECT_URL = 'vacancy_list'
+
+# Console backend by default so "Send Invite" / notifications work without
+# any setup in dev. Point EMAIL_BACKEND at django.core.mail.backends.smtp
+# and set EMAIL_HOST/PORT/HOST_USER/HOST_PASSWORD for real delivery.
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "hr@example.com")

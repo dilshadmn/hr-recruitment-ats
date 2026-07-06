@@ -1,0 +1,145 @@
+{% extends "hr_base.html" %}
+{% load candidates_extras %}
+{% block title %}{{ candidate.full_name }} - Timeline{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">{{ candidate.full_name }} <span class="text-muted small">{{ candidate.candidate_code }}</span></h3>
+  <div>
+    <span class="{{ candidate.status|badge_class }}">{{ candidate.get_status_display }}</span>
+    {% if candidate.is_duplicate %}<span class="badge-dup ms-2">Reapply</span>{% endif %}
+    <a href="{% url 'candidate_edit' candidate.pk %}" class="btn btn-outline-app btn-sm ms-2">Edit</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Personal Details</h5>
+      <dl class="row mb-0">
+        <dt class="col-sm-4">Email</dt><dd class="col-sm-8">{{ candidate.email }}</dd>
+        <dt class="col-sm-4">Phone</dt><dd class="col-sm-8">{{ candidate.phone|default:"-" }}</dd>
+        <dt class="col-sm-4">DOB</dt><dd class="col-sm-8">{{ candidate.dob|default:"-" }}</dd>
+        <dt class="col-sm-4">Location</dt><dd class="col-sm-8">{{ candidate.current_location|default:"-" }}</dd>
+        <dt class="col-sm-4">Applied Role</dt><dd class="col-sm-8">{{ candidate.job.title|default:"-" }}</dd>
+        <dt class="col-sm-4">Source</dt><dd class="col-sm-8">{{ candidate.source|default:"-" }}</dd>
+        <dt class="col-sm-4">LinkedIn</dt><dd class="col-sm-8">{% if candidate.linkedin %}<a href="{{ candidate.linkedin }}" target="_blank">{{ candidate.linkedin }}</a>{% else %}-{% endif %}</dd>
+        <dt class="col-sm-4">Portfolio</dt><dd class="col-sm-8">{% if candidate.portfolio_url %}<a href="{{ candidate.portfolio_url }}" target="_blank">{{ candidate.portfolio_url }}</a>{% else %}-{% endif %}</dd>
+        <dt class="col-sm-4">Notice Period</dt><dd class="col-sm-8">{{ candidate.notice_period|default:"-" }}</dd>
+        <dt class="col-sm-4">Current / Expected Salary</dt><dd class="col-sm-8">{{ candidate.current_salary|default:"-" }} / {{ candidate.expected_salary|default:"-" }}</dd>
+        {% if candidate.resume_blob_url %}
+        <dt class="col-sm-4">Resume</dt><dd class="col-sm-8"><a href="{{ candidate.resume_blob_url.url }}" target="_blank">Download / Preview</a></dd>
+        {% endif %}
+      </dl>
+    </div>
+
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Education</h5>
+      {% for e in candidate.education.all %}
+        <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+          <strong>{{ e.qualification }}</strong> {% if e.specialization %}({{ e.specialization }}){% endif %}<br>
+          <span class="text-muted small">{{ e.institution|default:"-" }} &middot; {{ e.year_completed|default:"-" }} &middot; {{ e.percentage|default:"-" }}%</span>
+        </div>
+      {% empty %}<p class="text-muted mb-0">No education records.</p>{% endfor %}
+    </div>
+
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Experience</h5>
+      {% for e in candidate.experience_set.all %}
+        <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+          <strong>{{ e.designation|default:"-" }}</strong> @ {{ e.company_name }}<br>
+          <span class="text-muted small">{{ e.start_date|default:"-" }} &rarr; {{ e.end_date|default:"Present" }} &middot; {{ e.skills|default:"" }}</span>
+        </div>
+      {% empty %}<p class="text-muted mb-0">No experience records.</p>{% endfor %}
+    </div>
+
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Interviews</h5>
+      {% for i in interviews %}
+        <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+          <strong>{{ i.get_round_type_display }}</strong> &middot; {{ i.scheduled_date|date:"d M Y H:i" }} &middot; {{ i.get_mode_display }}<br>
+          <span class="text-muted small">Interviewer: {{ i.interviewer|default:"Unassigned" }} &middot; Status: {{ i.get_status_display }} &middot; Result: {{ i.get_result_display }}</span>
+          {% if i.feedback %}<div class="small mt-1">{{ i.feedback }}</div>{% endif %}
+        </div>
+      {% empty %}<p class="text-muted mb-0">No interviews scheduled.</p>{% endfor %}
+      <a href="{% url 'interview_schedule' candidate.pk %}" class="btn btn-sm btn-outline-app mt-2">Schedule Interview</a>
+    </div>
+
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Offers</h5>
+      {% for o in offers %}
+        <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+          <span class="{{ o.status|lower|badge_class }}">{{ o.get_status_display }}</span>
+          {% if o.offer_letter %}<a href="{{ o.offer_letter.url }}" target="_blank" class="ms-2">Offer Letter</a>{% endif %}
+          <span class="text-muted small ms-2">{{ o.created_at|date:"d M Y" }}</span>
+        </div>
+      {% empty %}<p class="text-muted mb-0">No offers yet.</p>{% endfor %}
+    </div>
+
+    <div class="card app-card p-4">
+      <h5 class="mb-3">Attachments</h5>
+      {% for a in attachments %}
+        <div><a href="{{ a.file.url }}" target="_blank">{{ a.label|default:a.file.name }}</a> <span class="text-muted small">{{ a.uploaded_at|date:"d M Y" }}</span></div>
+      {% empty %}<p class="text-muted mb-0">No attachments.</p>{% endfor %}
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Stage Dates (SLA)</h5>
+      <ul class="list-unstyled mb-0">
+        <li><strong>Applied:</strong> {{ candidate.created_at|date:"d M Y" }}</li>
+        {% for status, date in stage_dates.items %}
+        <li><strong>{{ status|title }}:</strong> {{ date|date:"d M Y H:i" }}</li>
+        {% endfor %}
+      </ul>
+      <p class="small text-muted mt-2 mb-0">Days in pipeline: {{ candidate.created_at|timesince }}</p>
+    </div>
+
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Status History</h5>
+      {% for h in history %}
+      <div class="timeline-item">
+        <div class="fw-semibold">{{ h.old_status|default:"—" }} &rarr; {{ h.new_status }}</div>
+        <div class="small text-muted">{{ h.changed_at|date:"d M Y H:i" }} by {{ h.changed_by|default:"System" }}</div>
+        {% if h.remarks %}<div class="small">{{ h.remarks }}</div>{% endif %}
+      </div>
+      {% empty %}<p class="text-muted mb-0">No history yet.</p>{% endfor %}
+    </div>
+
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3">Notes</h5>
+      <form method="post" action="{% url 'candidate_add_note' candidate.pk %}" class="mb-3">
+        {% csrf_token %}
+        {{ note_form.text }}
+        <button type="submit" class="btn btn-sm btn-fill-app mt-2">Add Note</button>
+      </form>
+      {% for n in notes %}
+        <div class="mb-2 pb-2 border-bottom">
+          <div>{{ n.text }}</div>
+          <div class="small text-muted">{{ n.author|default:"Unknown" }} &middot; {{ n.created_at|date:"d M Y H:i" }}</div>
+        </div>
+      {% empty %}<p class="text-muted mb-0">No notes yet.</p>{% endfor %}
+    </div>
+
+    <div class="card app-card p-4">
+      <h5 class="mb-3">Communication Log</h5>
+      <form method="post" action="{% url 'candidate_add_log' candidate.pk %}" class="mb-3">
+        {% csrf_token %}
+        <div class="row g-2">
+          <div class="col-4">{{ comm_form.channel }}</div>
+          <div class="col-8">{{ comm_form.subject }}</div>
+          <div class="col-12 mt-2">{{ comm_form.message }}</div>
+        </div>
+        <button type="submit" class="btn btn-sm btn-fill-app mt-2">Log Communication</button>
+      </form>
+      {% for l in communication_logs %}
+        <div class="mb-2 pb-2 border-bottom">
+          <strong>{{ l.get_channel_display }}</strong>{% if l.subject %} - {{ l.subject }}{% endif %}
+          <div class="small">{{ l.message|default:"" }}</div>
+          <div class="small text-muted">{{ l.logged_by|default:"Unknown" }} &middot; {{ l.logged_at|date:"d M Y H:i" }}</div>
+        </div>
+      {% empty %}<p class="text-muted mb-0">No communication logged yet.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

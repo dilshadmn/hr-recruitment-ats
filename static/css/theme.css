@@ -108,12 +108,20 @@ table.dataTable tbody td {
   font-size: 0.8rem;
 }
 .badge-new { background-color: #0d6efd; color: #fff; }
+.badge-open { background-color: #0d6efd; color: #fff; }
 .badge-reapply { background-color: #fd7e14; color: #fff; }
 .badge-under_review { background-color: #17a2b8; color: #fff; }
+.badge-round1 { background-color: #6f42c1; color: #fff; }
+.badge-interview { background-color: #17a2b8; color: #fff; }
+.badge-final_selection { background-color: #6610f2; color: #fff; }
 .badge-shortlisted { background-color: #198754; color: #fff; }
 .badge-rejected { background-color: #dc3545; color: #fff; }
 .badge-blacklisted { background-color: #212529; color: #fff; }
 .badge-hired { background-color: var(--dark-green); color: #fff; }
+.badge-draft { background-color: #6c757d; color: #fff; }
+.badge-sent { background-color: #0d6efd; color: #fff; }
+.badge-accepted { background-color: #198754; color: #fff; }
+.badge-declined { background-color: #dc3545; color: #fff; }
 
 .badge-dup {
   background-color: #fff3cd;

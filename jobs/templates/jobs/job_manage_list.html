@@ -1,0 +1,65 @@
+{% extends "hr_base.html" %}
+{% block title %}Vacancy Management{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Vacancy Management</h3>
+  <a href="{% url 'job_add' %}" class="btn btn-fill-app btn-sm"><i class="bi bi-plus-lg"></i> Create Vacancy</a>
+</div>
+
+<div class="card app-card p-3">
+  <div class="table-responsive">
+    <table id="jobTable" class="table table-hover align-middle w-100">
+      <thead>
+        <tr>
+          <th>Job Code</th>
+          <th>Title</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th>Archived</th>
+          <th>Applicants</th>
+          <th>Closing Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in jobs %}
+        <tr>
+          <td>{{ job.job_code }}</td>
+          <td>{{ job.title }}</td>
+          <td>{{ job.location|default:"-" }}</td>
+          <td>
+            {% if job.status == 'OPEN' %}<span class="badge-status badge-shortlisted">Open</span>
+            {% else %}<span class="badge-status badge-rejected">Closed</span>{% endif %}
+          </td>
+          <td>{% if job.is_archived %}Yes{% else %}No{% endif %}</td>
+          <td>{{ job.candidates.count }}</td>
+          <td>{{ job.closing_date|date:"d M Y"|default:"-" }}</td>
+          <td class="text-nowrap">
+            <a href="{% url 'job_edit' job.pk %}" class="btn btn-sm btn-outline-app">Edit</a>
+            {% if job.jd_file %}<a href="{{ job.jd_file.url }}" target="_blank" class="btn btn-sm btn-outline-app">JD</a>{% endif %}
+            {% if job.status == 'OPEN' %}
+            <form method="post" action="{% url 'job_close' job.pk %}" class="d-inline" onsubmit="return confirm('Close this vacancy?');">
+              {% csrf_token %}<button class="btn btn-sm btn-outline-danger">Close</button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'job_reopen' job.pk %}" class="d-inline">
+              {% csrf_token %}<button class="btn btn-sm btn-outline-app">Reopen</button>
+            </form>
+            {% endif %}
+            {% if not job.is_archived %}
+            <form method="post" action="{% url 'job_archive' job.pk %}" class="d-inline" onsubmit="return confirm('Archive this vacancy?');">
+              {% csrf_token %}<button class="btn btn-sm btn-dark">Archive</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>$(function () { $('#jobTable').DataTable({ order: [] }); });</script>
+{% endblock %}

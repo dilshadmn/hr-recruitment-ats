@@ -21,6 +21,7 @@ class Job(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
     )
     is_archived = models.BooleanField(default=False)
+    jd_file = models.FileField('Job Description', upload_to='jds/', blank=True, null=True)
 
     class Meta:
         ordering = ['-created_on']

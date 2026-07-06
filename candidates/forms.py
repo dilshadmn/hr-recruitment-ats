@@ -1,7 +1,9 @@
 from django import forms
 from django.forms import inlineformset_factory
 
-from .models import Candidate, CandidateEducation, CandidateExperience
+from jobs.models import Job
+
+from .models import Candidate, CandidateEducation, CandidateExperience, CommunicationLog, Note
 
 
 class BootstrapFormMixin:
@@ -61,6 +63,40 @@ class CandidateExperienceForm(BootstrapFormMixin, forms.ModelForm):
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._add_bootstrap_classes()
+
+
+class CandidateNoteForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Note
+        fields = ['text']
+        widgets = {'text': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Add a note about this candidate...'})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._add_bootstrap_classes()
+
+
+class CommunicationLogForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = CommunicationLog
+        fields = ['channel', 'subject', 'message']
+        widgets = {'message': forms.Textarea(attrs={'rows': 2})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._add_bootstrap_classes()
+
+
+class BulkUploadForm(BootstrapFormMixin, forms.Form):
+    job = forms.ModelChoiceField(queryset=Job.objects.filter(status=Job.Status.OPEN), label='Vacancy')
+    source = forms.ChoiceField(choices=[
+        ('Careers Portal', 'Careers Portal'), ('Referral', 'Referral'), ('LinkedIn', 'LinkedIn'),
+        ('Naukri', 'Naukri'), ('Agency', 'Agency'), ('Other', 'Other'),
+    ])
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

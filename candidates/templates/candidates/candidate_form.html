@@ -1,0 +1,38 @@
+{% extends "hr_base.html" %}
+{% block title %}Edit {{ object.full_name }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card app-card p-4">
+      <h4 class="mb-3">Edit Candidate</h4>
+      <p class="text-muted small">Education and experience rows can be managed from the <a href="{% url 'candidate_timeline' object.pk %}">Candidate Timeline</a> page or Django admin.</p>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Full Name</label>{{ form.full_name }}</div>
+          <div class="col-md-6"><label class="form-label">Email</label>{{ form.email }}</div>
+          <div class="col-md-6"><label class="form-label">Phone</label>{{ form.phone }}</div>
+          <div class="col-md-6"><label class="form-label">Date of Birth</label>{{ form.dob }}</div>
+          <div class="col-md-6"><label class="form-label">Current Location</label>{{ form.current_location }}</div>
+          <div class="col-md-6"><label class="form-label">{{ form.qualification.label }}</label>{{ form.qualification }}</div>
+          <div class="col-md-6"><label class="form-label">{{ form.institution.label }}</label>{{ form.institution }}</div>
+          <div class="col-md-6"><label class="form-label">Last Role</label>{{ form.last_role }}</div>
+          <div class="col-md-6"><label class="form-label">Last Company</label>{{ form.last_company }}</div>
+          <div class="col-md-6"><label class="form-label">Total Experience (years)</label>{{ form.total_experience_years }}</div>
+          <div class="col-12"><label class="form-label">{{ form.skills.label }}</label>{{ form.skills }}</div>
+          <div class="col-md-6"><label class="form-label">{{ form.resume_blob_url.label }}</label>{{ form.resume_blob_url }}</div>
+          <div class="col-md-6"><label class="form-label">LinkedIn</label>{{ form.linkedin }}</div>
+          <div class="col-md-6"><label class="form-label">Portfolio URL</label>{{ form.portfolio_url }}</div>
+          <div class="col-md-4"><label class="form-label">Notice Period</label>{{ form.notice_period }}</div>
+          <div class="col-md-4"><label class="form-label">Current Salary</label>{{ form.current_salary }}</div>
+          <div class="col-md-4"><label class="form-label">Expected Salary</label>{{ form.expected_salary }}</div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-fill-app">Save</button>
+          <a href="{% url 'candidate_timeline' object.pk %}" class="btn btn-outline-app">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

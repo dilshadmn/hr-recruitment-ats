@@ -15,6 +15,8 @@ urlpatterns = [
     path('', RedirectView.as_view(pattern_name='vacancy_list', permanent=False)),
     path('', include('jobs.urls')),
     path('', include('candidates.urls')),
+    path('', include('interviews.urls')),
+    path('', include('dashboard.urls')),
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,30 @@
+{% extends "hr_base.html" %}
+{% block title %}{% if object %}Edit{% else %}Create{% endif %} Vacancy{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card app-card p-4">
+      <h4 class="mb-3">{% if object %}Edit Vacancy{% else %}Create Vacancy{% endif %}</h4>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-8"><label class="form-label">Title</label>{{ form.title }}</div>
+          <div class="col-md-4"><label class="form-label">Status</label>{{ form.status }}</div>
+          <div class="col-md-6"><label class="form-label">Location</label>{{ form.location }}</div>
+          <div class="col-md-6"><label class="form-label">Closing Date</label>{{ form.closing_date }}</div>
+          <div class="col-12"><label class="form-label">Description</label>{{ form.description }}</div>
+          <div class="col-12"><label class="form-label">Requirements</label>{{ form.requirements }}</div>
+          <div class="col-12">
+            <label class="form-label">Job Description File</label>{{ form.jd_file }}
+            {% if object.jd_file %}<div class="small mt-1"><a href="{{ object.jd_file.url }}" target="_blank">Current JD</a></div>{% endif %}
+          </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-fill-app">Save</button>
+          <a href="{% url 'job_manage_list' %}" class="btn btn-outline-app">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

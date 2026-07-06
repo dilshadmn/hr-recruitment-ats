@@ -1,0 +1,25 @@
+{% extends "hr_base.html" %}
+{% block title %}Interview Result{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card app-card p-4">
+      <h4 class="mb-3">Mark Result - {{ object.candidate.full_name }}</h4>
+      <p class="text-muted small">{{ object.get_round_type_display }} on {{ object.scheduled_date|date:"d M Y H:i" }}</p>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Status</label>{{ form.status }}</div>
+          <div class="col-md-6"><label class="form-label">Result</label>{{ form.result }}</div>
+          <div class="col-md-6"><label class="form-label">Score</label>{{ form.score }}</div>
+          <div class="col-12"><label class="form-label">Feedback</label>{{ form.feedback }}</div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-fill-app">Save</button>
+          <a href="{% url 'candidate_timeline' object.candidate.pk %}" class="btn btn-outline-app">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

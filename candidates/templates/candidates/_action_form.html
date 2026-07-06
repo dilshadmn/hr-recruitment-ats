@@ -1,0 +1,6 @@
+<form method="post" action="{% url url_name c.id %}" class="d-inline"
+      {% if confirm %}onsubmit="return confirm('{{ confirm }}');"{% endif %}>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <button type="submit" class="btn btn-sm {{ cls }}">{{ label }}</button>
+</form>

@@ -1,12 +1,16 @@
 from django.contrib import admin
 
 from .models import (
+    Attachment,
     Blacklist,
     Candidate,
     CandidateEducation,
     CandidateExperience,
     CandidateStatusHistory,
+    CommunicationLog,
     EmailRegistry,
+    Note,
+    Offer,
 )
 
 
@@ -27,6 +31,21 @@ class CandidateStatusHistoryInline(admin.TabularInline):
     can_delete = False
 
 
+class NoteInline(admin.TabularInline):
+    model = Note
+    extra = 0
+
+
+class CommunicationLogInline(admin.TabularInline):
+    model = CommunicationLog
+    extra = 0
+
+
+class OfferInline(admin.TabularInline):
+    model = Offer
+    extra = 0
+
+
 @admin.register(Candidate)
 class CandidateAdmin(admin.ModelAdmin):
     list_display = (
@@ -36,7 +55,10 @@ class CandidateAdmin(admin.ModelAdmin):
     list_filter = ('status', 'job', 'is_duplicate', 'is_blacklisted', 'source')
     search_fields = ('candidate_code', 'full_name', 'email', 'phone')
     readonly_fields = ('candidate_code', 'created_at', 'updated_at')
-    inlines = [CandidateEducationInline, CandidateExperienceInline, CandidateStatusHistoryInline]
+    inlines = [
+        CandidateEducationInline, CandidateExperienceInline, CandidateStatusHistoryInline,
+        NoteInline, CommunicationLogInline, OfferInline,
+    ]
 
 
 @admin.register(Blacklist)
@@ -49,3 +71,14 @@ class BlacklistAdmin(admin.ModelAdmin):
 class EmailRegistryAdmin(admin.ModelAdmin):
     list_display = ('email', 'first_candidate', 'application_count', 'last_applied_at')
     search_fields = ('email',)
+
+
+@admin.register(Attachment)
+class AttachmentAdmin(admin.ModelAdmin):
+    list_display = ('candidate', 'label', 'uploaded_by', 'uploaded_at')
+
+
+@admin.register(Offer)
+class OfferAdmin(admin.ModelAdmin):
+    list_display = ('candidate', 'status', 'sent_at', 'created_by', 'created_at')
+    list_filter = ('status',)

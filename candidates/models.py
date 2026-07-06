@@ -145,3 +145,74 @@ class EmailRegistry(models.Model):
 
     def __str__(self):
         return f"{self.email} ({self.application_count} applications)"
+
+
+class Note(models.Model):
+    """Free-text HR notes on a candidate, e.g. "Strong communication,
+    salary expectation high"."""
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='notes')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Note on {self.candidate.full_name} by {self.author}"
+
+
+class CommunicationLog(models.Model):
+    class Channel(models.TextChoices):
+        EMAIL = 'EMAIL', 'Email'
+        PHONE = 'PHONE', 'Phone'
+        OTHER = 'OTHER', 'Other'
+
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='communication_logs')
+    channel = models.CharField(max_length=20, choices=Channel.choices, default=Channel.EMAIL)
+    subject = models.CharField(max_length=255, blank=True, null=True)
+    message = models.TextField(blank=True, null=True)
+    logged_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    logged_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-logged_at']
+
+    def __str__(self):
+        return f"{self.get_channel_display()} with {self.candidate.full_name} on {self.logged_at:%Y-%m-%d}"
+
+
+class Attachment(models.Model):
+    """Extra documents beyond the resume (ID proof, certificates, etc.)."""
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='attachments/')
+    label = models.CharField(max_length=255, blank=True, null=True)
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return self.label or self.file.name
+
+
+class Offer(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        SENT = 'SENT', 'Sent'
+        ACCEPTED = 'ACCEPTED', 'Accepted'
+        DECLINED = 'DECLINED', 'Declined'
+
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='offers')
+    offer_letter = models.FileField(upload_to='offers/', blank=True, null=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    sent_at = models.DateTimeField(blank=True, null=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Offer for {self.candidate.full_name} ({self.get_status_display()})"

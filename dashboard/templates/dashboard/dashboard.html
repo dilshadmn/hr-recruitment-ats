@@ -1,0 +1,39 @@
+{% extends "hr_base.html" %}
+{% block title %}HR Dashboard{% endblock %}
+{% block content %}
+<h3 class="mb-4">Dashboard</h3>
+
+<div class="row g-3 mb-4">
+  {% for label, value in kpis_display %}
+  <div class="col-md-3 col-sm-6">
+    <div class="card app-card stat-card p-3 text-center h-100">
+      <div class="text-muted small">{{ label }}</div>
+      <h2 class="mb-0">{{ value }}</h2>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card app-card p-4">
+  <h5 class="mb-3">Upcoming Interviews</h5>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle w-100">
+      <thead><tr><th>Date &amp; Time</th><th>Candidate</th><th>Round</th><th>Interviewer</th><th>Mode</th></tr></thead>
+      <tbody>
+        {% for i in upcoming_interviews %}
+        <tr>
+          <td>{{ i.scheduled_date|date:"d M Y H:i" }}</td>
+          <td><a href="{% url 'candidate_timeline' i.candidate.pk %}">{{ i.candidate.full_name }}</a></td>
+          <td>{{ i.get_round_type_display }}</td>
+          <td>{{ i.interviewer|default:"Unassigned" }}</td>
+          <td>{{ i.get_mode_display }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-muted text-center">No upcoming interviews.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <a href="{% url 'interview_scheduler' %}" class="btn btn-outline-app btn-sm">Open Interview Scheduler</a>
+</div>
+{% endblock %}

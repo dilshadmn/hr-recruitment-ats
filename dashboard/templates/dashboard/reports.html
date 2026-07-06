@@ -1,0 +1,47 @@
+{% extends "hr_base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<h3 class="mb-4">Reports</h3>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card app-card stat-card p-3 text-center h-100">
+      <div class="text-muted small">Avg. Time to Hire</div>
+      <h2 class="mb-0">{% if avg_time_to_hire_days is not None %}{{ avg_time_to_hire_days }}d{% else %}-{% endif %}</h2>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card app-card stat-card p-3 text-center h-100">
+      <div class="text-muted small">Vacancy Fill Rate</div>
+      <h2 class="mb-0">{{ fill_rate }}%</h2>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card app-card stat-card p-3 text-center h-100">
+      <div class="text-muted small">Rejection Ratio</div>
+      <h2 class="mb-0">{{ rejection_ratio }}%</h2>
+    </div>
+  </div>
+</div>
+
+<div class="card app-card p-4">
+  <h5 class="mb-3">Source Effectiveness</h5>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle w-100">
+      <thead><tr><th>Source</th><th>Total Applicants</th><th>Hired</th><th>Conversion</th></tr></thead>
+      <tbody>
+        {% for row in source_effectiveness %}
+        <tr>
+          <td>{{ row.source }}</td>
+          <td>{{ row.total }}</td>
+          <td>{{ row.hired }}</td>
+          <td>{% widthratio row.hired row.total 100 %}%</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-muted text-center">No data yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
