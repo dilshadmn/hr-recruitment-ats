@@ -1,0 +1,120 @@
+{% extends "public_base.html" %}
+{% block title %}Apply - {{ job.title }}{% endblock %}
+{% block content %}
+<h3 class="mb-1">Apply for {{ job.title }}</h3>
+<p class="text-muted mb-4">{{ job.location|default:"" }} &middot; Job Code: {{ job.job_code }}</p>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+
+  <div class="card app-card p-4 mb-4">
+    <h5 class="mb-3">Personal Details</h5>
+    <div class="row g-3">
+      <div class="col-md-6"><label class="form-label">Full Name</label>{{ form.full_name }}</div>
+      <div class="col-md-6"><label class="form-label">Email</label>{{ form.email }}</div>
+      <div class="col-md-6"><label class="form-label">Phone</label>{{ form.phone }}</div>
+      <div class="col-md-6"><label class="form-label">Date of Birth</label>{{ form.dob }}</div>
+      <div class="col-md-6"><label class="form-label">Current Location</label>{{ form.current_location }}</div>
+      <div class="col-md-6"><label class="form-label">{{ form.qualification.label }}</label>{{ form.qualification }}</div>
+      <div class="col-md-6"><label class="form-label">{{ form.institution.label }}</label>{{ form.institution }}</div>
+      <div class="col-md-6"><label class="form-label">Last Role</label>{{ form.last_role }}</div>
+      <div class="col-md-6"><label class="form-label">Last Company</label>{{ form.last_company }}</div>
+      <div class="col-md-6"><label class="form-label">Total Experience (years)</label>{{ form.total_experience_years }}</div>
+    </div>
+    {% for error in form.non_field_errors %}<div class="text-danger small mt-2">{{ error }}</div>{% endfor %}
+  </div>
+
+  <div class="card app-card p-4 mb-4">
+    <h5 class="mb-3">Education</h5>
+    {{ education_formset.management_form }}
+    <div id="education-rows">
+      {% for f in education_formset %}
+      <div class="row g-2 align-items-end mb-2 formset-row">
+        <div class="col-md-3">{% if forloop.first %}<label class="form-label small">Qualification</label>{% endif %}{{ f.qualification }}</div>
+        <div class="col-md-3">{% if forloop.first %}<label class="form-label small">Institution</label>{% endif %}{{ f.institution }}</div>
+        <div class="col-md-2">{% if forloop.first %}<label class="form-label small">Year</label>{% endif %}{{ f.year_completed }}</div>
+        <div class="col-md-2">{% if forloop.first %}<label class="form-label small">%/GPA</label>{% endif %}{{ f.percentage }}</div>
+        <div class="col-md-1">{% if forloop.first %}<label class="form-label small">Spec.</label>{% endif %}{{ f.specialization }}</div>
+        <div class="col-md-1">{{ f.DELETE }} <span class="small text-muted">Remove</span></div>
+        {{ f.id }}
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn-outline-app btn-sm mt-2" id="add-education">+ Add another qualification</button>
+  </div>
+
+  <div class="card app-card p-4 mb-4">
+    <h5 class="mb-3">Experience</h5>
+    {{ experience_formset.management_form }}
+    <div id="experience-rows">
+      {% for f in experience_formset %}
+      <div class="row g-2 align-items-end mb-2 formset-row">
+        <div class="col-md-3">{% if forloop.first %}<label class="form-label small">Company</label>{% endif %}{{ f.company_name }}</div>
+        <div class="col-md-2">{% if forloop.first %}<label class="form-label small">Designation</label>{% endif %}{{ f.designation }}</div>
+        <div class="col-md-2">{% if forloop.first %}<label class="form-label small">Start</label>{% endif %}{{ f.start_date }}</div>
+        <div class="col-md-2">{% if forloop.first %}<label class="form-label small">End</label>{% endif %}{{ f.end_date }}</div>
+        <div class="col-md-2">{% if forloop.first %}<label class="form-label small">Skills</label>{% endif %}{{ f.skills }}</div>
+        <div class="col-md-1">{{ f.DELETE }} <span class="small text-muted">Remove</span></div>
+        {{ f.id }}
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn-outline-app btn-sm mt-2" id="add-experience">+ Add another role</button>
+  </div>
+
+  <div class="card app-card p-4 mb-4">
+    <h5 class="mb-3">Skills, Resume &amp; Preferences</h5>
+    <div class="row g-3">
+      <div class="col-12"><label class="form-label">{{ form.skills.label }}</label>{{ form.skills }}</div>
+      <div class="col-md-6"><label class="form-label">{{ form.resume_blob_url.label }}</label>{{ form.resume_blob_url }}</div>
+      <div class="col-md-6"><label class="form-label">LinkedIn</label>{{ form.linkedin }}</div>
+      <div class="col-md-6"><label class="form-label">Portfolio URL</label>{{ form.portfolio_url }}</div>
+      <div class="col-md-4"><label class="form-label">Notice Period</label>{{ form.notice_period }}</div>
+      <div class="col-md-4"><label class="form-label">Current Salary</label>{{ form.current_salary }}</div>
+      <div class="col-md-4"><label class="form-label">Expected Salary</label>{{ form.expected_salary }}</div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-fill-app btn-lg">Submit Application</button>
+</form>
+
+<template id="education-empty-form">
+  <div class="row g-2 align-items-end mb-2 formset-row">
+    <div class="col-md-3">{{ education_formset.empty_form.qualification }}</div>
+    <div class="col-md-3">{{ education_formset.empty_form.institution }}</div>
+    <div class="col-md-2">{{ education_formset.empty_form.year_completed }}</div>
+    <div class="col-md-2">{{ education_formset.empty_form.percentage }}</div>
+    <div class="col-md-1">{{ education_formset.empty_form.specialization }}</div>
+    <div class="col-md-1">{{ education_formset.empty_form.DELETE }}</div>
+    {{ education_formset.empty_form.id }}
+  </div>
+</template>
+
+<template id="experience-empty-form">
+  <div class="row g-2 align-items-end mb-2 formset-row">
+    <div class="col-md-3">{{ experience_formset.empty_form.company_name }}</div>
+    <div class="col-md-2">{{ experience_formset.empty_form.designation }}</div>
+    <div class="col-md-2">{{ experience_formset.empty_form.start_date }}</div>
+    <div class="col-md-2">{{ experience_formset.empty_form.end_date }}</div>
+    <div class="col-md-2">{{ experience_formset.empty_form.skills }}</div>
+    <div class="col-md-1">{{ experience_formset.empty_form.DELETE }}</div>
+    {{ experience_formset.empty_form.id }}
+  </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function wireAddRow(buttonId, templateId, rowsId, prefix) {
+  document.getElementById(buttonId).addEventListener('click', function () {
+    const totalForms = document.getElementById('id_' + prefix + '-TOTAL_FORMS');
+    const index = parseInt(totalForms.value, 10);
+    const template = document.getElementById(templateId).innerHTML.replaceAll('__prefix__', index);
+    document.getElementById(rowsId).insertAdjacentHTML('beforeend', template);
+    totalForms.value = index + 1;
+  });
+}
+wireAddRow('add-education', 'education-empty-form', 'education-rows', 'edu');
+wireAddRow('add-experience', 'experience-empty-form', 'experience-rows', 'exp');
+</script>
+{% endblock %}

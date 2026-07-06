@@ -1,0 +1,55 @@
+{% extends "public_base.html" %}
+{% block title %}Open Vacancies{% endblock %}
+{% block content %}
+<h3 class="mb-4">Open Vacancies</h3>
+
+<div class="row g-3">
+  {% for job in jobs %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card app-card p-3 h-100 d-flex flex-column">
+      <h5 class="mb-1">{{ job.title }}</h5>
+      <div class="text-muted small mb-2">
+        <i class="bi bi-geo-alt"></i> {{ job.location|default:"Location flexible" }}
+      </div>
+      <p class="flex-grow-1">{{ job.description|truncatewords:20 }}</p>
+      <button type="button" class="btn btn-primary-app mt-2"
+              data-bs-toggle="modal" data-bs-target="#jobModal"
+              data-url="{% url 'vacancy_detail' job.job_code %}?partial=1">
+        View &amp; Apply
+      </button>
+    </div>
+  </div>
+  {% empty %}
+  <p class="text-muted">No open vacancies right now. Please check back soon.</p>
+  {% endfor %}
+</div>
+
+<div class="modal fade" id="jobModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Job Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="jobModalBody">
+        <div class="text-center text-muted py-4">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function () {
+  $('#jobModal').on('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    const url = button.getAttribute('data-url');
+    $('#jobModalBody').html('<div class="text-center text-muted py-4">Loading...</div>');
+    $.get(url, function (html) {
+      $('#jobModalBody').html(html);
+    });
+  });
+});
+</script>
+{% endblock %}

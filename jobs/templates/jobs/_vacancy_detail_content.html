@@ -1,0 +1,14 @@
+<h4>{{ job.title }}</h4>
+<div class="text-muted mb-3">
+  <i class="bi bi-geo-alt"></i> {{ job.location|default:"Location flexible" }}
+  &nbsp;&middot;&nbsp; Job Code: {{ job.job_code }}
+  {% if job.closing_date %}&nbsp;&middot;&nbsp; Closes {{ job.closing_date|date:"d M Y" }}{% endif %}
+</div>
+
+<h6>Description</h6>
+<p style="white-space: pre-line;">{{ job.description|default:"-" }}</p>
+
+<h6>Requirements</h6>
+<p style="white-space: pre-line;">{{ job.requirements|default:"-" }}</p>
+
+<a href="{% url 'application_create' job.job_code %}" class="btn btn-fill-app">Apply for this role</a>

@@ -25,7 +25,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'recruitment',
+    'jobs',
+    'candidates',
 ]
 
 MIDDLEWARE = [
@@ -108,18 +109,5 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'login'
-
-# Path to the SharePoint-exported Excel workbook used by import_candidates
-# and sync_sharepoint. Defaults to the file placed next to the project root.
-CENTRAL_REPOSITORY_XLSX = os.environ.get(
-    "CENTRAL_REPOSITORY_XLSX",
-    str(BASE_DIR.parent / "Central Repository.xlsx"),
-)
-
-# SharePoint site/creds used only by recruitment/sharepoint_sync.py
-SHAREPOINT_SITE_URL = os.environ.get("SHAREPOINT_SITE_URL", "")
-SHAREPOINT_USERNAME = os.environ.get("SHAREPOINT_USERNAME", "")
-SHAREPOINT_PASSWORD = os.environ.get("SHAREPOINT_PASSWORD", "")
-SHAREPOINT_FILE_URL = os.environ.get("SHAREPOINT_FILE_URL", "")
+LOGIN_REDIRECT_URL = 'admin:index'  # HR admin dashboard lands here once Phase 2 rebuilds it
+LOGOUT_REDIRECT_URL = 'vacancy_list'
