@@ -7,3 +7,7 @@ db.sqlite3
 *.egg-info/
 venv/
 .venv/
+
+# Real candidate data (PII) - never commit
+/Sample Data/
+*.xlsx
