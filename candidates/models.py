@@ -112,6 +112,8 @@ class CandidateStatusHistory(models.Model):
     old_status = models.CharField(max_length=30, blank=True)
     new_status = models.CharField(max_length=30)
     changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    performed_by = models.CharField('Done by', max_length=150, blank=True, null=True,
+                                    help_text='Who actually performed this action (free text).')
     remarks = models.TextField(blank=True, null=True)
     changed_at = models.DateTimeField(auto_now_add=True)
 

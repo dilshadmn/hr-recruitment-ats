@@ -2,12 +2,14 @@ import re
 import uuid
 
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Max, OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView, ListView, UpdateView
 
+from interviews.models import Interview
 from jobs.models import Job
 
 from . import services
@@ -19,8 +21,14 @@ from .forms import (
     EducationFormSet,
     ExperienceFormSet,
 )
-from .models import Candidate
+from .models import Candidate, CandidateStatusHistory
 from .permissions import ANY_STAFF, HIRING_MANAGER, HR_ADMIN, RECRUITER, GroupRequiredMixin
+
+
+def _performed_by(request):
+    """Free-text 'Done by' from the action form, defaulting to the logged-in user."""
+    return (request.POST.get('performed_by', '').strip()
+            or request.user.get_full_name() or request.user.get_username())
 
 STATUS = Candidate.Status
 
@@ -103,7 +111,15 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
         return self.request.GET.get('tab', 'open')
 
     def get_queryset(self):
-        qs = Candidate.objects.select_related('job').all()
+        last_action = (CandidateStatusHistory.objects
+                       .filter(candidate=OuterRef('pk')).order_by('-changed_at', '-id')
+                       .values('changed_at')[:1])
+        next_interview = (Interview.objects
+                          .filter(candidate=OuterRef('pk')).order_by('-scheduled_date')
+                          .values('scheduled_date')[:1])
+        qs = (Candidate.objects.select_related('job')
+              .annotate(last_action_at=Subquery(last_action),
+                        interview_at=Subquery(next_interview)))
         status = TAB_STATUS_MAP.get(self.get_tab())
         if status is not None:
             qs = qs.filter(status=status)
@@ -138,6 +154,8 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
         ctx['tab'] = self.get_tab()
         ctx['tabs'] = REPOSITORY_TABS
         ctx['jobs'] = Job.objects.all()
+        u = self.request.user
+        ctx['is_hr_admin'] = u.is_superuser or u.groups.filter(name=HR_ADMIN).exists()
         return ctx
 
 
@@ -163,6 +181,9 @@ class CandidateTimelineView(GroupRequiredMixin, DetailView):
         for h in ctx['history'].order_by('changed_at'):
             stage_dates.setdefault(h.new_status, h.changed_at)
         ctx['stage_dates'] = stage_dates
+        u = self.request.user
+        ctx['is_hr_admin'] = u.is_superuser or u.groups.filter(name=HR_ADMIN).exists()
+        ctx['can_revert'] = ctx['is_hr_admin'] or u.groups.filter(name=RECRUITER).exists()
         return ctx
 
 
@@ -221,17 +242,77 @@ class CandidateStatusActionView(GroupRequiredMixin, View):
     def post(self, request, pk):
         candidate = get_object_or_404(Candidate, pk=pk)
         reason = request.POST.get('reason', '').strip()
+        performed_by = _performed_by(request)
         if self.require_reason and not reason:
             messages.error(request, 'A reason is required.')
             return redirect(request.POST.get('next') or reverse('candidate_timeline', args=[pk]))
 
         if self.target_status == STATUS.BLACKLISTED:
-            services.blacklist_candidate(candidate, reason, user=request.user)
+            services.blacklist_candidate(candidate, reason, user=request.user, performed_by=performed_by)
         else:
-            services.change_status(candidate, self.target_status, user=request.user, remarks=reason or None)
+            services.change_status(candidate, self.target_status, user=request.user,
+                                   remarks=reason or None, performed_by=performed_by)
         messages.success(request, f'{candidate.full_name} moved to "{candidate.get_status_display()}".')
         next_url = request.POST.get('next')
         return redirect(next_url or reverse('candidate_timeline', args=[pk]))
+
+
+class CandidateRevertLastActionView(GroupRequiredMixin, View):
+    """Undo the most recent status change, restoring the previous status and
+    logging the reversal (for accidental clicks)."""
+    allowed_groups = (HR_ADMIN, RECRUITER)
+
+    def post(self, request, pk):
+        candidate = get_object_or_404(Candidate, pk=pk)
+        last = candidate.history.order_by('-changed_at', '-id').first()
+        next_url = request.POST.get('next') or reverse('candidate_timeline', args=[pk])
+        if not last or not last.old_status:
+            messages.error(request, 'There is no previous status to revert to.')
+            return redirect(next_url)
+        labels = dict(Candidate.Status.choices)
+        note = (f'Reverted accidental change '
+                f'({labels.get(last.new_status, last.new_status)} -> '
+                f'{labels.get(last.old_status, last.old_status)}).')
+        services.change_status(candidate, last.old_status, user=request.user,
+                               remarks=note, performed_by=_performed_by(request))
+        messages.success(request, f'Reverted {candidate.full_name} to "{candidate.get_status_display()}".')
+        return redirect(next_url)
+
+
+class CandidateDeleteView(GroupRequiredMixin, View):
+    """Permanently delete a candidate and all their related records (HR Admin only)."""
+    allowed_groups = (HR_ADMIN,)
+
+    def post(self, request, pk):
+        candidate = get_object_or_404(Candidate, pk=pk)
+        name = candidate.full_name
+        candidate.delete()
+        messages.success(request, f'Candidate "{name}" and all their records were deleted.')
+        next_url = request.POST.get('next')
+        if next_url and f'/candidates/{pk}/' in next_url:
+            next_url = None  # came from the deleted candidate's own page
+        return redirect(next_url or reverse('candidate_repository'))
+
+
+class BulkRejectClosedVacanciesView(GroupRequiredMixin, View):
+    """Move every still-active candidate under a CLOSED vacancy to Rejected.
+    Hired and already-terminal candidates are left untouched."""
+    allowed_groups = (HR_ADMIN,)
+    ACTIVE = (STATUS.OPEN, STATUS.SHORTLISTED, STATUS.ROUND1, STATUS.INTERVIEW, STATUS.FINAL_SELECTION)
+
+    def post(self, request):
+        performed_by = _performed_by(request)
+        cands = list(Candidate.objects.filter(
+            job__status=Job.Status.CLOSED, status__in=self.ACTIVE).select_related('job'))
+        history = [CandidateStatusHistory(
+            candidate=c, old_status=c.status, new_status=STATUS.REJECTED,
+            changed_by=request.user, performed_by=performed_by,
+            remarks=f'Auto-rejected: vacancy "{c.job.title}" is closed.') for c in cands]
+        Candidate.objects.filter(pk__in=[c.pk for c in cands]).update(
+            status=STATUS.REJECTED, updated_at=timezone.now())
+        CandidateStatusHistory.objects.bulk_create(history, batch_size=100)
+        messages.success(request, f'{len(cands)} candidate(s) in closed vacancies moved to Rejected.')
+        return redirect('job_manage_list')
 
 
 # ---------------------------------------------------------------------------

@@ -51,6 +51,12 @@ class JobManageListView(GroupRequiredMixin, ListView):
     def get_queryset(self):
         return Job.objects.all()
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        u = self.request.user
+        ctx['is_hr_admin'] = u.is_superuser or u.groups.filter(name=HR_ADMIN).exists()
+        return ctx
+
 
 class JobCreateView(GroupRequiredMixin, CreateView):
     model = Job

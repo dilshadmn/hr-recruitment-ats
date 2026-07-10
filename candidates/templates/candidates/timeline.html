@@ -8,6 +8,21 @@
     <span class="{{ candidate.status|badge_class }}">{{ candidate.get_status_display }}</span>
     {% if candidate.is_duplicate %}<span class="badge-dup ms-2">Reapply</span>{% endif %}
     <a href="{% url 'candidate_edit' candidate.pk %}" class="btn btn-outline-app btn-sm ms-2">Edit</a>
+    {% if can_revert %}
+    <form method="post" action="{% url 'candidate_revert' candidate.pk %}" class="d-inline"
+          onsubmit="return confirm('Undo the last status change and restore the previous status?');">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <button class="btn btn-outline-secondary btn-sm ms-1"><i class="bi bi-arrow-counterclockwise"></i> Undo last action</button>
+    </form>
+    {% endif %}
+    {% if is_hr_admin %}
+    <form method="post" action="{% url 'candidate_delete' candidate.pk %}" class="d-inline"
+          onsubmit="return confirm('Permanently delete {{ candidate.full_name|escapejs }} and ALL their records? This cannot be undone.');">
+      {% csrf_token %}
+      <button class="btn btn-danger btn-sm ms-1"><i class="bi bi-trash"></i> Delete</button>
+    </form>
+    {% endif %}
   </div>
 </div>
 
@@ -100,7 +115,8 @@
       {% for h in history %}
       <div class="timeline-item">
         <div class="fw-semibold">{{ h.old_status|default:"—" }} &rarr; {{ h.new_status }}</div>
-        <div class="small text-muted">{{ h.changed_at|date:"d M Y H:i" }} by {{ h.changed_by|default:"System" }}</div>
+        <div class="small text-muted">{{ h.changed_at|date:"d M Y H:i" }}
+          &middot; Done by {{ h.performed_by|default:h.changed_by|default:"System" }}</div>
         {% if h.remarks %}<div class="small">{{ h.remarks }}</div>{% endif %}
       </div>
       {% empty %}<p class="text-muted mb-0">No history yet.</p>{% endfor %}

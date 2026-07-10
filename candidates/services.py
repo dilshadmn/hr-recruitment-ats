@@ -36,14 +36,14 @@ def register_application(candidate):
     return entry
 
 
-def record_creation(candidate, user=None, remarks=None):
+def record_creation(candidate, user=None, remarks=None, performed_by=None):
     CandidateStatusHistory.objects.create(
         candidate=candidate, old_status='', new_status=candidate.status,
-        changed_by=user, remarks=remarks,
+        changed_by=user, performed_by=performed_by, remarks=remarks,
     )
 
 
-def change_status(candidate, new_status, user=None, remarks=None):
+def change_status(candidate, new_status, user=None, remarks=None, performed_by=None):
     old_status = candidate.status
     if old_status == new_status:
         return candidate
@@ -51,16 +51,16 @@ def change_status(candidate, new_status, user=None, remarks=None):
     candidate.save(update_fields=['status', 'updated_at'])
     CandidateStatusHistory.objects.create(
         candidate=candidate, old_status=old_status, new_status=new_status,
-        changed_by=user, remarks=remarks,
+        changed_by=user, performed_by=performed_by, remarks=remarks,
     )
     return candidate
 
 
-def blacklist_candidate(candidate, reason, user=None):
+def blacklist_candidate(candidate, reason, user=None, performed_by=None):
     Blacklist.objects.create(candidate=candidate, reason=reason, blacklisted_by=user)
     candidate.is_blacklisted = True
     candidate.save(update_fields=['is_blacklisted'])
-    change_status(candidate, STATUS.BLACKLISTED, user=user, remarks=reason)
+    change_status(candidate, STATUS.BLACKLISTED, user=user, remarks=reason, performed_by=performed_by)
     return candidate
 
 
