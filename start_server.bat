@@ -24,16 +24,16 @@ REM --- Apply any pending database changes ---
 echo.
 echo ================================================================
 echo   HR Recruitment Portal is starting...
-echo   Open in your browser:  http://localhost:8000/
-echo   (Public careers page. HR login is at http://localhost:8000/login/)
+echo   HR login:      http://localhost:8000/login/
+echo   Public careers page: http://localhost:8000/careers/
 echo.
 echo   Leave this window OPEN while you use the site.
 echo   Close this window (or press Ctrl+C) to stop the server.
 echo ================================================================
 echo.
 
-REM --- Open the browser automatically after a short delay ---
-start "" cmd /c "timeout /t 3 >nul & start http://localhost:8000/"
+REM --- Open the browser (HR login page) automatically after a short delay ---
+start "" cmd /c "timeout /t 3 >nul & start http://localhost:8000/login/"
 
 REM --- Run the server (0.0.0.0 = also reachable from other devices on your network) ---
 ".venv\Scripts\python.exe" manage.py runserver 0.0.0.0:8000
