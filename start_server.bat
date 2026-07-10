@@ -15,10 +15,8 @@ if not exist ".venv\Scripts\python.exe" (
 
 REM --- Stop any old server still holding port 8000 (prevents a stale
 REM     SQLite server from serving old data after config changes) ---
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000" ^| findstr "LISTENING"') do (
-    echo Stopping old server on port 8000 (PID %%p)...
-    taskkill /F /PID %%p >nul 2>&1
-)
+echo Freeing port 8000 if an old server is running...
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000" ^| findstr "LISTENING"') do taskkill /F /PID %%p >nul 2>&1
 
 REM --- Apply any pending database changes ---
 ".venv\Scripts\python.exe" manage.py migrate
@@ -39,3 +37,8 @@ start "" cmd /c "timeout /t 3 >nul & start http://localhost:8000/"
 
 REM --- Run the server (0.0.0.0 = also reachable from other devices on your network) ---
 ".venv\Scripts\python.exe" manage.py runserver 0.0.0.0:8000
+
+REM --- Keep the window open if the server stops or an error occurs ---
+echo.
+echo The server has stopped. Press any key to close this window.
+pause >nul
