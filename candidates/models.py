@@ -75,6 +75,12 @@ class Candidate(models.Model):
     def get_absolute_url(self):
         return reverse('candidate_detail', args=[self.pk])
 
+    @property
+    def latest_interview(self):
+        """Most recent interview (uses the prefetch cache when available)."""
+        ivs = list(self.interviews.all())
+        return ivs[-1] if ivs else None
+
 
 class CandidateEducation(models.Model):
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='education')

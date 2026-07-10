@@ -71,7 +71,7 @@
       <h5 class="mb-3">Interviews</h5>
       {% for i in interviews %}
         <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
-          <strong>{{ i.get_round_type_display }}</strong> &middot; {{ i.scheduled_date|date:"d M Y H:i" }} &middot; {{ i.get_mode_display }}<br>
+          <strong>{{ i.get_round_type_display }}</strong> &middot; {{ i.scheduled_date|date:"d M Y" }} &middot; {{ i.get_mode_display }}<br>
           <span class="text-muted small">Interviewer: {{ i.interviewer|default:"Unassigned" }} &middot; Status: {{ i.get_status_display }} &middot; Result: {{ i.get_result_display }}</span>
           {% if i.feedback %}<div class="small mt-1">{{ i.feedback }}</div>{% endif %}
         </div>
@@ -104,22 +104,21 @@
       <ul class="list-unstyled mb-0">
         <li><strong>Applied:</strong> {{ candidate.created_at|date:"d M Y" }}</li>
         {% for status, date in stage_dates.items %}
-        <li><strong>{{ status|title }}:</strong> {{ date|date:"d M Y H:i" }}</li>
+        <li><strong>{{ status|title }}:</strong> {{ date|date:"d M Y" }}</li>
         {% endfor %}
       </ul>
       <p class="small text-muted mt-2 mb-0">Days in pipeline: {{ candidate.created_at|timesince }}</p>
     </div>
 
     <div class="card app-card p-4 mb-3">
-      <h5 class="mb-3">Status History</h5>
-      {% for h in history %}
+      <h5 class="mb-3">Activity History</h5>
+      {% for e in activity %}
       <div class="timeline-item">
-        <div class="fw-semibold">{{ h.old_status|default:"—" }} &rarr; {{ h.new_status }}</div>
-        <div class="small text-muted">{{ h.changed_at|date:"d M Y H:i" }}
-          &middot; Done by {{ h.performed_by|default:h.changed_by|default:"System" }}</div>
-        {% if h.remarks %}<div class="small">{{ h.remarks }}</div>{% endif %}
+        <div class="fw-semibold"><i class="bi bi-{{ e.icon }} me-1"></i>{{ e.title }}</div>
+        <div class="small text-muted">{{ e.when|date:"d M Y" }} &middot; {{ e.who|default:"System" }}</div>
+        {% if e.detail %}<div class="small mt-1">{{ e.detail }}</div>{% endif %}
       </div>
-      {% empty %}<p class="text-muted mb-0">No history yet.</p>{% endfor %}
+      {% empty %}<p class="text-muted mb-0">No activity yet.</p>{% endfor %}
     </div>
 
     <div class="card app-card p-4 mb-3">

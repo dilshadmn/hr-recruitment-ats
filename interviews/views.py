@@ -1,11 +1,11 @@
 from django.contrib import messages
-from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, ListView, UpdateView
 
+from candidates import services
 from candidates.models import Candidate
 from candidates.permissions import ANY_STAFF, HR_ADMIN, INTERVIEWER, RECRUITER, GroupRequiredMixin
 
@@ -14,34 +14,21 @@ from .models import Interview
 
 
 class InterviewSchedulerListView(GroupRequiredMixin, ListView):
-    """Agenda-style 'calendar view': all interviews grouped by date,
-    filterable by interviewer/status/date range."""
-    model = Interview
+    """Candidates currently in the Interview stage: interview-pending (not yet
+    scheduled), scheduled, and result-pending. Once a result is marked the
+    candidate moves to Hired/Rejected and drops off this list."""
+    model = Candidate
     template_name = 'interviews/scheduler.html'
-    context_object_name = 'interviews'
+    context_object_name = 'candidates'
     allowed_groups = ANY_STAFF
 
     def get_queryset(self):
-        qs = Interview.objects.select_related('candidate', 'interviewer').all()
-        interviewer_id = self.request.GET.get('interviewer')
-        if interviewer_id:
-            qs = qs.filter(interviewer_id=interviewer_id)
-        status = self.request.GET.get('status')
-        if status:
-            qs = qs.filter(status=status)
-        date_from = self.request.GET.get('date_from')
-        if date_from:
-            qs = qs.filter(scheduled_date__date__gte=date_from)
-        date_to = self.request.GET.get('date_to')
-        if date_to:
-            qs = qs.filter(scheduled_date__date__lte=date_to)
-        return qs
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['interviewers'] = User.objects.filter(groups__name=INTERVIEWER).distinct()
-        ctx['status_choices'] = Interview.Status.choices
-        return ctx
+        qs = (Candidate.objects.filter(status=Candidate.Status.INTERVIEW)
+              .select_related('job').prefetch_related('interviews'))
+        q = self.request.GET.get('q')
+        if q:
+            qs = qs.filter(full_name__icontains=q)
+        return qs.order_by('full_name')
 
 
 class InterviewScheduleView(GroupRequiredMixin, CreateView):
@@ -96,11 +83,28 @@ class InterviewResultView(GroupRequiredMixin, UpdateView):
     allowed_groups = (HR_ADMIN, INTERVIEWER)
 
     def form_valid(self, form):
-        messages.success(self.request, 'Interview result recorded.')
-        return super().form_valid(form)
+        # Marking a result completes the interview and drives the candidate's
+        # pipeline: Pass -> Hired, Fail -> Rejected.
+        form.instance.status = Interview.Status.COMPLETED
+        response = super().form_valid(form)
+        interview = self.object
+        candidate = interview.candidate
+        performed_by = self.request.user.get_full_name() or self.request.user.get_username()
+        round_label = interview.get_round_type_display()
+        if interview.result == Interview.Result.PASS_:
+            services.change_status(candidate, Candidate.Status.HIRED, user=self.request.user,
+                                   remarks=f'{round_label} interview passed.', performed_by=performed_by)
+            messages.success(self.request, f'{candidate.full_name} passed and was moved to Hired.')
+        elif interview.result == Interview.Result.FAIL:
+            services.change_status(candidate, Candidate.Status.REJECTED, user=self.request.user,
+                                   remarks=f'{round_label} interview failed.', performed_by=performed_by)
+            messages.success(self.request, f'{candidate.full_name} failed and was moved to Rejected.')
+        else:
+            messages.success(self.request, 'Interview result recorded.')
+        return response
 
     def get_success_url(self):
-        return reverse('candidate_timeline', args=[self.object.candidate_id])
+        return reverse('interview_scheduler')
 
 
 class InterviewSendInviteView(GroupRequiredMixin, View):

@@ -1,36 +1,16 @@
 {% extends "hr_base.html" %}
-{% block title %}Interview Scheduler{% endblock %}
+{% block title %}Interviews{% endblock %}
 {% block content %}
-<h3 class="mb-3">Interview Scheduler</h3>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Interviews <span class="text-muted small">({{ candidates|length }} in interview stage)</span></h3>
+</div>
 
 <form method="get" class="row g-2 mb-3 align-items-end">
-  <div class="col-md-3">
-    <label class="form-label small text-muted mb-0">Interviewer</label>
-    <select name="interviewer" class="form-select">
-      <option value="">All interviewers</option>
-      {% for u in interviewers %}
-      <option value="{{ u.id }}" {% if request.GET.interviewer == u.id|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
-      {% endfor %}
-    </select>
+  <div class="col-md-4">
+    <label class="form-label small text-muted mb-0">Search candidate</label>
+    <input type="text" name="q" value="{{ request.GET.q|default:'' }}" class="form-control" placeholder="Name">
   </div>
-  <div class="col-md-3">
-    <label class="form-label small text-muted mb-0">Status</label>
-    <select name="status" class="form-select">
-      <option value="">All statuses</option>
-      {% for value, label in status_choices %}
-      <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-md-3">
-    <label class="form-label small text-muted mb-0">From</label>
-    <input type="date" name="date_from" value="{{ request.GET.date_from|default:'' }}" class="form-control">
-  </div>
-  <div class="col-md-3">
-    <label class="form-label small text-muted mb-0">To</label>
-    <input type="date" name="date_to" value="{{ request.GET.date_to|default:'' }}" class="form-control">
-  </div>
-  <div class="col-12"><button type="submit" class="btn btn-primary-app btn-sm">Filter</button></div>
+  <div class="col-md-2"><button type="submit" class="btn btn-primary-app btn-sm w-100">Filter</button></div>
 </form>
 
 <div class="card app-card p-3">
@@ -38,33 +18,45 @@
     <table class="table table-hover align-middle w-100">
       <thead>
         <tr>
-          <th>Date &amp; Time</th><th>Candidate</th><th>Round</th><th>Interviewer</th>
-          <th>Mode</th><th>Status</th><th>Result</th><th>Actions</th>
+          <th>Candidate</th><th>Job</th><th>Round</th><th>Interview Date</th><th>State</th><th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        {% for i in interviews %}
+        {% for c in candidates %}
+        {% with iv=c.latest_interview %}
         <tr>
-          <td>{{ i.scheduled_date|date:"d M Y H:i" }}</td>
-          <td><a href="{% url 'candidate_timeline' i.candidate.pk %}">{{ i.candidate.full_name }}</a></td>
-          <td>{{ i.get_round_type_display }}</td>
-          <td>{{ i.interviewer|default:"Unassigned" }}</td>
-          <td>{{ i.get_mode_display }}{% if i.meeting_link %} <a href="{{ i.meeting_link }}" target="_blank">(link)</a>{% endif %}</td>
-          <td>{{ i.get_status_display }}</td>
-          <td>{{ i.get_result_display }}</td>
+          <td><a href="{% url 'candidate_timeline' c.pk %}">{{ c.full_name }}</a></td>
+          <td>{{ c.job.title|default:"-" }}</td>
+          <td>{% if iv %}{{ iv.get_round_type_display }}{% else %}-{% endif %}</td>
+          <td>{% if iv %}{{ iv.scheduled_date|date:"d M Y" }}{% else %}<span class="text-muted">Not scheduled</span>{% endif %}</td>
+          <td>
+            {% if not iv %}
+              <span class="badge-status badge-interview">Interview Pending</span>
+            {% elif iv.status == 'SCHEDULED' or iv.status == 'RESCHEDULED' %}
+              <span class="badge-status badge-round1">Scheduled</span>
+            {% else %}
+              <span class="badge-status badge-final_selection">Result Pending</span>
+            {% endif %}
+          </td>
           <td class="text-nowrap">
-            <a href="{% url 'interview_reschedule' i.pk %}" class="btn btn-sm btn-outline-app">Reschedule</a>
-            <a href="{% url 'interview_result' i.pk %}" class="btn btn-sm btn-outline-app">Mark Result</a>
-            <form method="post" action="{% url 'interview_send_invite' i.pk %}" class="d-inline">
-              {% csrf_token %}<button class="btn btn-sm btn-fill-app">Send Invite</button>
-            </form>
+            {% if not iv %}
+              <a href="{% url 'interview_schedule' c.pk %}" class="btn btn-sm btn-fill-app">Schedule Interview</a>
+            {% else %}
+              <a href="{% url 'interview_result' iv.pk %}" class="btn btn-sm btn-fill-app">Mark Result</a>
+              <a href="{% url 'interview_reschedule' iv.pk %}" class="btn btn-sm btn-outline-app">Reschedule</a>
+              <form method="post" action="{% url 'interview_send_invite' iv.pk %}" class="d-inline">
+                {% csrf_token %}<button class="btn btn-sm btn-outline-app">Send Invite</button>
+              </form>
+            {% endif %}
           </td>
         </tr>
+        {% endwith %}
         {% empty %}
-        <tr><td colspan="8" class="text-muted text-center">No interviews scheduled.</td></tr>
+        <tr><td colspan="6" class="text-muted text-center py-3">No candidates in the interview stage.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+<p class="small text-muted mt-2">Marking a result as <strong>Pass</strong> moves the candidate to Hired; <strong>Fail</strong> moves them to Rejected.</p>
 {% endblock %}

@@ -181,6 +181,34 @@ class CandidateTimelineView(GroupRequiredMixin, DetailView):
         for h in ctx['history'].order_by('changed_at'):
             stage_dates.setdefault(h.new_status, h.changed_at)
         ctx['stage_dates'] = stage_dates
+
+        # Unified activity feed: every action (status changes, notes, calls,
+        # interviews, offers) in one chronological list with remarks.
+        labels = dict(Candidate.Status.choices)
+        events = []
+        for h in ctx['history']:
+            events.append({
+                'when': h.changed_at, 'icon': 'arrow-right-circle',
+                'title': f"Status: {labels.get(h.old_status, h.old_status or '—')} → {labels.get(h.new_status, h.new_status)}",
+                'detail': h.remarks, 'who': h.performed_by or h.changed_by})
+        for n in ctx['notes']:
+            events.append({'when': n.created_at, 'icon': 'sticky',
+                           'title': 'Note added', 'detail': n.text, 'who': n.author})
+        for l in ctx['communication_logs']:
+            title = l.get_channel_display() + (f": {l.subject}" if l.subject else " logged")
+            events.append({'when': l.logged_at, 'icon': 'telephone',
+                           'title': title, 'detail': l.message, 'who': l.logged_by})
+        for i in ctx['interviews']:
+            events.append({
+                'when': i.created_at, 'icon': 'calendar-event',
+                'title': f"{i.get_round_type_display()} interview — {i.get_status_display()} / {i.get_result_display()}",
+                'detail': i.feedback, 'who': i.interviewer or i.created_by})
+        for o in ctx['offers']:
+            events.append({'when': o.created_at, 'icon': 'file-earmark-text',
+                           'title': f"Offer {o.get_status_display()}", 'detail': None, 'who': o.created_by})
+        events.sort(key=lambda e: e['when'], reverse=True)
+        ctx['activity'] = events
+
         u = self.request.user
         ctx['is_hr_admin'] = u.is_superuser or u.groups.filter(name=HR_ADMIN).exists()
         ctx['can_revert'] = ctx['is_hr_admin'] or u.groups.filter(name=RECRUITER).exists()
