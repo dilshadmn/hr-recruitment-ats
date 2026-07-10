@@ -22,8 +22,10 @@ from django.db.utils import OperationalError
 from django.utils import timezone
 
 from candidates.models import (
-    Candidate, CandidateStatusHistory, EmailRegistry, Note,
+    Candidate, CandidateEducation, CandidateStatusHistory, CommunicationLog,
+    EmailRegistry, Note, Offer,
 )
+from interviews.models import Interview
 from jobs.models import Job
 
 STATUS = Candidate.Status
@@ -136,6 +138,31 @@ def _chunks(seq, n):
         yield seq[i:i + n]
 
 
+def _interview_outcome(raw):
+    """Map a Round-1/Interview status string to (Interview.status, Interview.result).
+    Returns None when no interview effectively happened (blank / N/A)."""
+    s = (raw or '').strip().lower()
+    if s in ('', 'na', 'n/a', 'nil', '-'):
+        return None
+    if s in ('cleared', 'selected', 'shortlisted', 'pass', 'passed'):
+        return Interview.Status.COMPLETED, Interview.Result.PASS_
+    if s in ('rejected', 'not cleared', 'fail', 'failed', 'not selected'):
+        return Interview.Status.COMPLETED, Interview.Result.FAIL
+    if s in ('not attended', 'no show', 'absent', 'did not attend'):
+        return Interview.Status.CANCELLED, Interview.Result.PENDING
+    return Interview.Status.COMPLETED, Interview.Result.PENDING
+
+
+def _num(v):
+    """Parse a numeric cell (int/float/'2.5'/'2 years') -> Decimal-friendly float or None."""
+    if v in (None, ''):
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    m = re.search(r'\d+(\.\d+)?', str(v))
+    return float(m.group()) if m else None
+
+
 class Command(BaseCommand):
     help = 'Import the legacy Central Repository.xlsx workbook.'
 
@@ -196,8 +223,10 @@ class Command(BaseCommand):
         n_dup = sum(1 for sp in specs if sp['is_dup'])
         n_short = sum(1 for sp in specs if sp['from_shortlisted'])
 
+        pstats = None
         if not dry:
-            self._write(specs, jobs)
+            obj_by_code = self._write(specs, jobs)
+            pstats = self._import_pipeline(shortlisted, list(obj_by_code.values()))
 
         self.stdout.write(self.style.SUCCESS(
             f"\n{'DRY RUN - ' if dry else ''}Done. Candidates: {len(specs)} | "
@@ -205,6 +234,8 @@ class Command(BaseCommand):
             f"duplicates flagged: {n_dup} | shortlisted-only: {n_short}"))
         self.stdout.write('Status: ' + ', '.join(f'{k}={v}' for k, v in sorted(by_status.items())))
         self.stdout.write('Role: ' + ', '.join(f'{k}={v}' for k, v in sorted(by_role.items())))
+        if pstats:
+            self.stdout.write('Pipeline: ' + ', '.join(f'{k}={v}' for k, v in pstats.items()))
 
     # ------------------------------------------------------------------ jobs
     def _create_jobs(self, role_rows, dry):
@@ -383,3 +414,113 @@ class Command(BaseCommand):
             self._retry(lambda b=batch: EmailRegistry.objects.bulk_create(b, batch_size=BATCH),
                         what='registry')
         self.stdout.write(f'  history={len(hist)} notes={len(notes)} registry={len(regs)}')
+        return obj_by_code
+
+    # ------------------------------------------------------- pipeline detail
+    def _import_pipeline(self, shortlisted, candidates):
+        """Third pass: attach Round-1/Interview records, screening calls, offers,
+        education and experience/CTC from the Shortlisted sheet to the matching
+        candidate (by email, else normalized name; prefer the role-matched one)."""
+        by_email, by_name = {}, {}
+        for c in candidates:
+            if c.email and not c.email.endswith('@import.local'):
+                by_email.setdefault(c.email.lower(), []).append(c)
+            nm = _norm_name(c.full_name)
+            if nm:
+                by_name.setdefault(nm, []).append(c)
+
+        def resolve(row):
+            em = _s(row.get('Mail ID'))
+            nm = _norm_name(row.get('Name'))
+            cands = (by_email.get(em.lower()) if em else None) or (by_name.get(nm) if nm else None)
+            if not cands:
+                return None
+            role = norm_role(row.get('Role Selected'))
+            for c in cands:
+                if c.job and c.job.title == role:
+                    return c
+            return cands[0]
+
+        interviews, comms, offers, notes, edus = [], [], [], [], []
+        cand_updates = {}
+
+        for d in shortlisted:
+            c = resolve(d)
+            if c is None:
+                continue
+
+            # screening call -> CommunicationLog (date embedded in subject since
+            # logged_at is auto-set; keeps the historical date visible)
+            call_date = _as_datetime(d.get('Call made date'))
+            call_status = _s(d.get('Call Status'))
+            if call_date or call_status:
+                when = f" ({call_date:%Y-%m-%d})" if call_date else ""
+                comms.append(CommunicationLog(
+                    candidate=c, channel=CommunicationLog.Channel.PHONE,
+                    subject=f"Screening call{when}: {call_status or 'made'}"[:255],
+                    message=_s(d.get('Call Remarks '))))
+
+            # Round 1 + Interview -> Interview records
+            for date_col, status_col, rtype in (
+                    ('Round 1 Date', 'Round 1 Status', Interview.RoundType.ROUND1),
+                    ('Interview Date', 'Interview Status', Interview.RoundType.FINAL)):
+                idate = _as_datetime(d.get(date_col))
+                outcome = _interview_outcome(_s(d.get(status_col)))
+                if not idate and not outcome:
+                    continue
+                status, result = outcome or (Interview.Status.SCHEDULED, Interview.Result.PENDING)
+                sched = idate or c.created_at or timezone.now()
+                fb = f"Imported. {status_col}: {_s(d.get(status_col)) or '-'}"
+                sby = _s(d.get('Screened By'))
+                if sby:
+                    fb += f" (screened by {sby})"
+                if not idate:
+                    fb += " [date approximate]"
+                interviews.append(Interview(
+                    candidate=c, round_type=rtype, scheduled_date=sched,
+                    mode=Interview.Mode.VIDEO, status=status, result=result, feedback=fb))
+
+            # Offer
+            if str(d.get('Offer Rolled Out') or '').strip().lower() == 'yes':
+                accepted = str(d.get('Offer Accepted') or '').strip().lower() == 'yes'
+                offers.append(Offer(
+                    candidate=c,
+                    status=Offer.Status.ACCEPTED if accepted else Offer.Status.SENT,
+                    sent_at=_as_datetime(d.get('Interview Date'))))
+                if str(d.get('Joined') or '').strip().lower() == 'yes':
+                    notes.append(Note(candidate=c, text='Candidate joined (imported).'))
+
+            # Education (College / Qualification)
+            college = _s(d.get('College'), 255)
+            qual = _s(d.get('Qualification') or d.get('Education'), 255)
+            if college or qual:
+                edus.append(CandidateEducation(
+                    candidate=c, qualification=qual or 'N/A', institution=college))
+
+            # Experience / CTC -> candidate fields
+            exp = _num(d.get('Relevent Experience'))
+            ctc = d.get('Current CTC')
+            if exp is not None or ctc not in (None, ''):
+                if exp is not None:
+                    c.total_experience_years = round(exp, 1)
+                if ctc not in (None, ''):
+                    c.current_salary = (f"{ctc} LPA" if isinstance(ctc, (int, float))
+                                        else _s(ctc, 100))
+                cand_updates[c.pk] = c
+
+        # write everything in batches
+        for model, rows, label in (
+                (Interview, interviews, 'interviews'), (CommunicationLog, comms, 'calls'),
+                (Offer, offers, 'offers'), (Note, notes, 'join-notes'),
+                (CandidateEducation, edus, 'education')):
+            for batch in _chunks(rows, BATCH):
+                self._retry(lambda m=model, b=batch: m.objects.bulk_create(b, batch_size=BATCH),
+                            what=label)
+
+        upd = list(cand_updates.values())
+        for batch in _chunks(upd, BATCH):
+            self._retry(lambda b=batch: Candidate.objects.bulk_update(
+                b, ['total_experience_years', 'current_salary'], batch_size=BATCH), what='exp/ctc')
+
+        return {'interviews': len(interviews), 'calls': len(comms), 'offers': len(offers),
+                'education': len(edus), 'exp/ctc': len(upd)}
