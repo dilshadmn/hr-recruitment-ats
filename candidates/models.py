@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
+from django.utils import timezone
 
 from jobs.models import Job
 
@@ -121,7 +122,8 @@ class CandidateStatusHistory(models.Model):
     performed_by = models.CharField('Done by', max_length=150, blank=True, null=True,
                                     help_text='Who actually performed this action (free text).')
     remarks = models.TextField(blank=True, null=True)
-    changed_at = models.DateTimeField(auto_now_add=True)
+    # default (not auto_now_add) so historical dates can be backfilled on import
+    changed_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ['-changed_at']
@@ -183,7 +185,8 @@ class CommunicationLog(models.Model):
     subject = models.CharField(max_length=255, blank=True, null=True)
     message = models.TextField(blank=True, null=True)
     logged_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    logged_at = models.DateTimeField(auto_now_add=True)
+    # default (not auto_now_add) so the real call date can be set on import
+    logged_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ['-logged_at']

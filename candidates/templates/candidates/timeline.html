@@ -41,7 +41,9 @@
         <dt class="col-sm-4">Portfolio</dt><dd class="col-sm-8">{% if candidate.portfolio_url %}<a href="{{ candidate.portfolio_url }}" target="_blank">{{ candidate.portfolio_url }}</a>{% else %}-{% endif %}</dd>
         <dt class="col-sm-4">Notice Period</dt><dd class="col-sm-8">{{ candidate.notice_period|default:"-" }}</dd>
         <dt class="col-sm-4">Current / Expected Salary</dt><dd class="col-sm-8">{{ candidate.current_salary|default:"-" }} / {{ candidate.expected_salary|default:"-" }}</dd>
-        {% if candidate.resume_blob_url %}
+        {% if candidate.resume_url %}
+        <dt class="col-sm-4">Resume (CV)</dt><dd class="col-sm-8"><a href="{{ candidate.resume_url }}" target="_blank"><i class="bi bi-file-earmark-person"></i> Open CV</a></dd>
+        {% elif candidate.resume_blob_url %}
         <dt class="col-sm-4">Resume</dt><dd class="col-sm-8"><a href="{{ candidate.resume_blob_url.url }}" target="_blank">Download / Preview</a></dd>
         {% endif %}
       </dl>

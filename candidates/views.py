@@ -200,11 +200,11 @@ class CandidateTimelineView(GroupRequiredMixin, DetailView):
                            'title': title, 'detail': l.message, 'who': l.logged_by})
         for i in ctx['interviews']:
             events.append({
-                'when': i.created_at, 'icon': 'calendar-event',
+                'when': i.scheduled_date, 'icon': 'calendar-event',
                 'title': f"{i.get_round_type_display()} interview — {i.get_status_display()} / {i.get_result_display()}",
                 'detail': i.feedback, 'who': i.interviewer or i.created_by})
         for o in ctx['offers']:
-            events.append({'when': o.created_at, 'icon': 'file-earmark-text',
+            events.append({'when': o.sent_at or o.created_at, 'icon': 'file-earmark-text',
                            'title': f"Offer {o.get_status_display()}", 'detail': None, 'who': o.created_by})
         events.sort(key=lambda e: e['when'], reverse=True)
         ctx['activity'] = events

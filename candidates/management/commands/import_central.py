@@ -163,6 +163,48 @@ def _num(v):
     return float(m.group()) if m else None
 
 
+STAGE_ORDER = [STATUS.OPEN, STATUS.SHORTLISTED, STATUS.ROUND1, STATUS.INTERVIEW,
+               STATUS.FINAL_SELECTION, STATUS.HIRED]
+
+
+def build_stage_history(spec):
+    """Reconstruct a candidate's dated stage timeline from the Excel signals:
+    Applied -> Shortlist -> Round 1 -> Interview -> Final Selection -> Hire
+    (or -> Rejected). Missing dates carry forward the last known date so the
+    ordering stays correct. Returns [(old_status, new_status, when, remark)]."""
+    sl = spec.get('sl') or {}
+    applied = spec.get('appdate')
+    screened = spec.get('screened_on') or _as_datetime(sl.get('Screened On'))
+    call = _as_datetime(sl.get('Call made date'))
+    r1 = _as_datetime(sl.get('Round 1 Date'))
+    iv = _as_datetime(sl.get('Interview Date'))
+    current = spec['status']
+
+    reached = 0
+    if sl or screened or call or current in STAGE_ORDER[1:]:
+        reached = 1
+    if r1 or _s(sl.get('Round 1 Status')):
+        reached = max(reached, 2)
+    if iv or _s(sl.get('Interview Status')):
+        reached = max(reached, 3)
+    if current in STAGE_ORDER:
+        reached = max(reached, STAGE_ORDER.index(current))
+
+    date_for = {0: applied, 1: screened or call, 2: r1, 3: iv, 4: None, 5: None}
+    out, last, prev = [], applied or timezone.now(), ''
+    for idx in range(reached + 1):
+        when = date_for.get(idx) or last
+        if when < last:
+            when = last
+        out.append((prev, STAGE_ORDER[idx], when, 'Applied (imported)' if idx == 0 else 'Imported'))
+        prev, last = STAGE_ORDER[idx], when
+
+    if current in (STATUS.REJECTED, STATUS.BLACKLISTED):
+        label = 'Rejected' if current == STATUS.REJECTED else 'Blacklisted'
+        out.append((prev, current, last, f'{label} (imported)'))
+    return out
+
+
 class Command(BaseCommand):
     help = 'Import the legacy Central Repository.xlsx workbook.'
 
@@ -191,13 +233,12 @@ class Command(BaseCommand):
 
         short_by_email, short_by_name = {}, {}
         for d in shortlisted:
-            stage = (_s(d.get('Current Stage')), _s(d.get('Final Status')))
             em = _s(d.get('Mail ID'))
             if em:
-                short_by_email[em.lower()] = stage
+                short_by_email[em.lower()] = d
             nm = _norm_name(d.get('Name'))
             if nm:
-                short_by_name.setdefault(nm, stage)
+                short_by_name.setdefault(nm, d)
 
         if opts['flush'] and not dry:
             self.stdout.write('Flushing previously imported data...')
@@ -283,11 +324,13 @@ class Command(BaseCommand):
             if name:
                 seen_names.add(_norm_name(name))
 
-            short = short_by_email.get(raw_email.lower()) if raw_email else None
-            if not short:
-                short = short_by_name.get(_norm_name(name))
+            sl = short_by_email.get(raw_email.lower()) if raw_email else None
+            if not sl:
+                sl = short_by_name.get(_norm_name(name))
             status, note_text = compute_status(
-                _s(d.get('Status')), short[0] if short else None, short[1] if short else None)
+                _s(d.get('Status')),
+                _s(sl.get('Current Stage')) if sl else None,
+                _s(sl.get('Final Status')) if sl else None)
 
             notes = [t for t in (_s(d.get('Remarks')), note_text) if t]
             specs.append(dict(
@@ -296,7 +339,8 @@ class Command(BaseCommand):
                 qual=_s(d.get('Education'), 255),
                 resume_url=_s(d.get('CV Link') or d.get('Hyper Link'), 1000),
                 source=_s(d.get('Source'), 255), status=status,
-                appdate=_as_datetime(d.get('Mail Date')), notes=notes,
+                appdate=_as_datetime(d.get('Mail Date')),
+                screened_on=_as_datetime(d.get('Screened On')), sl=sl, notes=notes,
                 hist_remark='Imported from Central Repository.xlsx', from_shortlisted=False))
 
     def _collect_shortlisted_only(self, shortlisted, jobs, specs, seen_emails, seen_names):
@@ -326,6 +370,7 @@ class Command(BaseCommand):
                 resume_url=_s(d.get('CV Link') or d.get('Hyper Link'), 1000),
                 source=_s(d.get('Source'), 255), status=status,
                 appdate=_as_datetime(d.get('Resume Received')),
+                screened_on=_as_datetime(d.get('Screened On')), sl=d,
                 notes=[t for t in (note_text,) if t],
                 hist_remark='Imported from Central Repository.xlsx (Shortlisted sheet)',
                 from_shortlisted=True))
@@ -383,10 +428,14 @@ class Command(BaseCommand):
             self._retry(lambda b=batch: Candidate.objects.bulk_update(b, ['created_at'], batch_size=BATCH),
                         what='dates')
 
-        # 3) status history
-        hist = [CandidateStatusHistory(candidate=obj_by_code[c.candidate_code], old_status='',
-                                       new_status=c.status, remarks=c._sp['hist_remark'])
-                for c in cands]
+        # 3) status history — reconstructed dated stage timeline per candidate
+        hist = []
+        for c in cands:
+            obj = obj_by_code[c.candidate_code]
+            for old, new, when, remark in build_stage_history(c._sp):
+                hist.append(CandidateStatusHistory(
+                    candidate=obj, old_status=old, new_status=new,
+                    changed_at=when, remarks=remark))
         for batch in _chunks(hist, BATCH):
             self._retry(lambda b=batch: CandidateStatusHistory.objects.bulk_create(b, batch_size=BATCH),
                         what='history')
@@ -454,11 +503,11 @@ class Command(BaseCommand):
             call_date = _as_datetime(d.get('Call made date'))
             call_status = _s(d.get('Call Status'))
             if call_date or call_status:
-                when = f" ({call_date:%Y-%m-%d})" if call_date else ""
                 comms.append(CommunicationLog(
                     candidate=c, channel=CommunicationLog.Channel.PHONE,
-                    subject=f"Screening call{when}: {call_status or 'made'}"[:255],
-                    message=_s(d.get('Call Remarks '))))
+                    subject=f"Screening call: {call_status or 'made'}"[:255],
+                    message=_s(d.get('Call Remarks ')),
+                    logged_at=call_date or c.created_at or timezone.now()))
 
             # Round 1 + Interview -> Interview records
             for date_col, status_col, rtype in (

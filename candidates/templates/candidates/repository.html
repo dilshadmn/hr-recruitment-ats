@@ -70,6 +70,8 @@
             {% if c.is_duplicate %}<span class="badge-dup ms-1">Reapply</span>{% endif %}</td>
           <td class="text-nowrap">
             <a href="{% url 'candidate_timeline' c.id %}" class="btn btn-sm btn-outline-app">View</a>
+            {% if c.resume_url %}<a href="{{ c.resume_url }}" target="_blank" class="btn btn-sm btn-outline-app">CV</a>
+            {% elif c.resume_blob_url %}<a href="{{ c.resume_blob_url.url }}" target="_blank" class="btn btn-sm btn-outline-app">CV</a>{% endif %}
             {% if tab == 'open' %}
               <button type="button" class="btn btn-sm btn-fill-app act" data-action="{% url 'candidate_shortlist' c.id %}" data-title="Shortlist {{ c.full_name }}">Shortlist</button>
             {% elif tab == 'shortlisted' %}
