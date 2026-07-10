@@ -98,6 +98,9 @@ elif DB_ENGINE in ("mssql", "azure", "azuresql"):
             'PORT': os.environ.get("DB_PORT", "1433"),
             'OPTIONS': {
                 'driver': os.environ.get("DB_ODBC_DRIVER", "ODBC Driver 18 for SQL Server"),
+                # Generous login timeout so the first request can wait for the
+                # serverless database to wake from auto-pause instead of erroring.
+                'connection_timeout': 60,
                 'extra_params': (
                     "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=60;"
                 ),

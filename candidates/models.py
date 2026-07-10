@@ -52,6 +52,8 @@ class Candidate(models.Model):
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.OPEN)
     source = models.CharField(max_length=255, blank=True, null=True)
     resume_blob_url = models.FileField('Resume', upload_to=candidate_resume_path, blank=True, null=True)
+    resume_url = models.URLField('Resume Link', max_length=1000, blank=True, null=True,
+                                 help_text='External link to the resume (e.g. SharePoint/Drive).')
 
     is_duplicate = models.BooleanField(default=False)
     is_blacklisted = models.BooleanField(default=False)
