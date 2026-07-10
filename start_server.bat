@@ -13,6 +13,13 @@ if not exist ".venv\Scripts\python.exe" (
     ".venv\Scripts\python.exe" -m pip install -r requirements.txt
 )
 
+REM --- Stop any old server still holding port 8000 (prevents a stale
+REM     SQLite server from serving old data after config changes) ---
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8000" ^| findstr "LISTENING"') do (
+    echo Stopping old server on port 8000 (PID %%p)...
+    taskkill /F /PID %%p >nul 2>&1
+)
+
 REM --- Apply any pending database changes ---
 ".venv\Scripts\python.exe" manage.py migrate
 
