@@ -1,2 +1,7 @@
 Django>=5.0,<6.0
+python-dotenv>=1.0
+# Azure SQL / SQL Server
+mssql-django>=1.5
+pyodbc>=5.0
+# PostgreSQL (optional, only if DB_ENGINE=postgres)
 psycopg2-binary>=2.9

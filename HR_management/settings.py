@@ -7,6 +7,12 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from a local .env file (if present) so DB
+# credentials etc. don't have to be set in the OS environment. Safe no-op
+# in production where real environment variables are used instead.
+from dotenv import load_dotenv
+load_dotenv(BASE_DIR / '.env')
+
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
     "django-insecure-af^fer9mep9gg^j6q_c(a%%63)&)5292q5ihgs&lm^7$g#xq)9",
@@ -65,7 +71,9 @@ WSGI_APPLICATION = 'HR_management.wsgi.application'
 # Defaults to SQLite so `migrate && runserver` works with zero setup.
 # Set DB_ENGINE=postgres (+ DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT) to
 # switch to PostgreSQL, or use an Azure SQL compatible ODBC engine the same way.
-if os.environ.get("DB_ENGINE", "sqlite") == "postgres":
+DB_ENGINE = os.environ.get("DB_ENGINE", "sqlite")
+
+if DB_ENGINE == "postgres":
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -74,6 +82,26 @@ if os.environ.get("DB_ENGINE", "sqlite") == "postgres":
             'PASSWORD': os.environ.get("DB_PASSWORD", ""),
             'HOST': os.environ.get("DB_HOST", "localhost"),
             'PORT': os.environ.get("DB_PORT", "5432"),
+        }
+    }
+elif DB_ENGINE in ("mssql", "azure", "azuresql"):
+    # Azure SQL Database (or any Microsoft SQL Server) via mssql-django + ODBC.
+    # Connection Timeout is generous because a serverless free-tier database
+    # can take ~30-60s to wake from auto-pause on the first request.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'mssql',
+            'NAME': os.environ.get("DB_NAME", "hr_recruitment"),
+            'USER': os.environ.get("DB_USER", ""),
+            'PASSWORD': os.environ.get("DB_PASSWORD", ""),
+            'HOST': os.environ.get("DB_HOST", ""),
+            'PORT': os.environ.get("DB_PORT", "1433"),
+            'OPTIONS': {
+                'driver': os.environ.get("DB_ODBC_DRIVER", "ODBC Driver 18 for SQL Server"),
+                'extra_params': (
+                    "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=60;"
+                ),
+            },
         }
     }
 else:
