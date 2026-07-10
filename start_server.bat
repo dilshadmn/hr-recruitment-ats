@@ -1,0 +1,34 @@
+@echo off
+REM ================================================================
+REM  HR Recruitment Portal - local launcher
+REM  Double-click this file to start the website on your PC.
+REM ================================================================
+cd /d "%~dp0"
+
+REM --- First run: create the virtual environment if it's missing ---
+if not exist ".venv\Scripts\python.exe" (
+    echo First run detected. Creating virtual environment and installing packages...
+    python -m venv .venv
+    ".venv\Scripts\python.exe" -m pip install --upgrade pip
+    ".venv\Scripts\python.exe" -m pip install -r requirements.txt
+)
+
+REM --- Apply any pending database changes ---
+".venv\Scripts\python.exe" manage.py migrate
+
+echo.
+echo ================================================================
+echo   HR Recruitment Portal is starting...
+echo   Open in your browser:  http://localhost:8000/
+echo   (Public careers page. HR login is at http://localhost:8000/login/)
+echo.
+echo   Leave this window OPEN while you use the site.
+echo   Close this window (or press Ctrl+C) to stop the server.
+echo ================================================================
+echo.
+
+REM --- Open the browser automatically after a short delay ---
+start "" cmd /c "timeout /t 3 >nul & start http://localhost:8000/"
+
+REM --- Run the server (0.0.0.0 = also reachable from other devices on your network) ---
+".venv\Scripts\python.exe" manage.py runserver 0.0.0.0:8000
