@@ -21,7 +21,7 @@ from .forms import (
     EducationFormSet,
     ExperienceFormSet,
 )
-from .models import Candidate, CandidateStatusHistory
+from .models import Candidate, CandidateStatusHistory, Note
 from .permissions import ANY_STAFF, HIRING_MANAGER, HR_ADMIN, RECRUITER, GroupRequiredMixin
 
 
@@ -212,6 +212,7 @@ class CandidateTimelineView(GroupRequiredMixin, DetailView):
         u = self.request.user
         ctx['is_hr_admin'] = u.is_superuser or u.groups.filter(name=HR_ADMIN).exists()
         ctx['can_revert'] = ctx['is_hr_admin'] or u.groups.filter(name=RECRUITER).exists()
+        ctx['all_jobs'] = Job.objects.all().order_by('title')
         return ctx
 
 
@@ -227,6 +228,25 @@ class CandidateUpdateView(GroupRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse('candidate_timeline', args=[self.object.pk])
+
+
+class CandidateChangeJobView(GroupRequiredMixin, View):
+    """Manually re-map a candidate to a different vacancy (e.g. move a
+    'General Application' to a specific opening)."""
+    allowed_groups = (HR_ADMIN, RECRUITER, HIRING_MANAGER)
+
+    def post(self, request, pk):
+        candidate = get_object_or_404(Candidate, pk=pk)
+        old = candidate.job.title if candidate.job else 'None'
+        job_id = request.POST.get('job') or None
+        candidate.job = get_object_or_404(Job, pk=job_id) if job_id else None
+        candidate.save(update_fields=['job', 'updated_at'])
+        new = candidate.job.title if candidate.job else 'None'
+        if old != new:
+            Note.objects.create(candidate=candidate, author=request.user,
+                                text=f'Vacancy changed: {old} -> {new}')
+            messages.success(request, f'Vacancy updated to "{new}".')
+        return redirect('candidate_timeline', pk=pk)
 
 
 class AddNoteView(GroupRequiredMixin, View):

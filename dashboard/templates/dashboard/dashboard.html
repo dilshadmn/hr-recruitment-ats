@@ -1,39 +1,117 @@
 {% extends "hr_base.html" %}
-{% block title %}HR Dashboard{% endblock %}
+{% block title %}Dashboard{% endblock %}
 {% block content %}
-<h3 class="mb-4">Dashboard</h3>
-
-<div class="row g-3 mb-4">
-  {% for label, value in kpis_display %}
-  <div class="col-md-3 col-sm-6">
-    <div class="card app-card stat-card p-3 text-center h-100">
-      <div class="text-muted small">{{ label }}</div>
-      <h2 class="mb-0">{{ value }}</h2>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h3 class="mb-0">Dashboard</h3>
+  <form method="get" class="d-flex align-items-end gap-2">
+    <input type="hidden" name="view" value="{{ view }}">
+    <div>
+      <label class="form-label small text-muted mb-0">Vacancy</label>
+      <select name="job" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 240px;">
+        <option value="">All vacancies</option>
+        {% for j in jobs %}
+        <option value="{{ j.id }}" {% if selected_job == j.id|stringformat:'s' %}selected{% endif %}>{{ j.title }}</option>
+        {% endfor %}
+      </select>
     </div>
-  </div>
-  {% endfor %}
+    <noscript><button class="btn btn-sm btn-primary-app">Go</button></noscript>
+  </form>
 </div>
 
-<div class="card app-card p-4">
+<ul class="nav nav-tabs mb-3" id="dashTabs">
+  <li class="nav-item"><button class="nav-link {% if view != 'overview' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#summaryPane">Summary</button></li>
+  <li class="nav-item"><button class="nav-link {% if view == 'overview' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#overviewPane">Overview</button></li>
+</ul>
+
+<div class="tab-content">
+  <!-- ===================== SUMMARY ===================== -->
+  <div class="tab-pane fade {% if view != 'overview' %}show active{% endif %}" id="summaryPane">
+    <div class="row g-3 mb-4">
+      {% with s=summary %}
+      <div class="col-md-3 col-6"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Total Applicants</div><h2 class="mb-0">{{ s.total }}</h2></div></div>
+      <div class="col-md-3 col-6"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Open</div><h2 class="mb-0">{{ s.open }}</h2></div></div>
+      <div class="col-md-3 col-6"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Shortlisted</div><h2 class="mb-0">{{ s.shortlisted }}</h2></div></div>
+      <div class="col-md-3 col-6"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Rejected</div><h2 class="mb-0">{{ s.rejected }}</h2></div></div>
+      {% endwith %}
+    </div>
+
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="card app-card p-3">
+          <h5 class="mb-3">By Job / Role</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle w-100">
+              <thead><tr><th>Role</th><th>Total</th><th>Open</th><th>Shortlisted</th><th>Rejected</th></tr></thead>
+              <tbody>
+                {% for r in by_job %}
+                <tr><td>{{ r.job__title|default:"Unassigned" }}</td><td>{{ r.total }}</td><td>{{ r.open }}</td><td>{{ r.shortlisted }}</td><td>{{ r.rejected }}</td></tr>
+                {% empty %}<tr><td colspan="5" class="text-muted text-center">No data.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card app-card p-3">
+          <h5 class="mb-3">By Source</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle w-100">
+              <thead><tr><th>Source</th><th>Total</th><th>Open</th><th>Shortlisted</th><th>Rejected</th></tr></thead>
+              <tbody>
+                {% for r in by_source %}
+                <tr><td>{{ r.source }}</td><td>{{ r.total }}</td><td>{{ r.open }}</td><td>{{ r.shortlisted }}</td><td>{{ r.rejected }}</td></tr>
+                {% empty %}<tr><td colspan="5" class="text-muted text-center">No data.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <div class="tab-pane fade {% if view == 'overview' %}show active{% endif %}" id="overviewPane">
+    <p class="text-muted small mb-3">Stage flow across the whole pipeline (based on each candidate's history, not just their current status). Click a stage to open the matching candidate list.</p>
+    <div class="row g-3">
+      {% for label, value, tab in overview %}
+      <div class="col-md-3 col-sm-4 col-6">
+        {% if tab %}
+        <a href="{% url 'candidate_repository' %}?tab={{ tab }}{% if selected_job %}&job={{ selected_job }}{% endif %}" class="text-decoration-none">
+          <div class="card app-card stat-card p-3 text-center h-100 dash-clickable">
+            <div class="text-muted small">{{ label }}</div><h2 class="mb-0">{{ value }}</h2>
+            <div class="small text-primary-app">View &rarr;</div>
+          </div>
+        </a>
+        {% else %}
+        <div class="card app-card stat-card p-3 text-center h-100">
+          <div class="text-muted small">{{ label }}</div><h2 class="mb-0">{{ value }}</h2>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card app-card p-4 mt-4">
   <h5 class="mb-3">Upcoming Interviews</h5>
   <div class="table-responsive">
     <table class="table table-hover align-middle w-100">
-      <thead><tr><th>Date &amp; Time</th><th>Candidate</th><th>Round</th><th>Interviewer</th><th>Mode</th></tr></thead>
+      <thead><tr><th>Date</th><th>Candidate</th><th>Round</th><th>Interviewer</th><th>Mode</th></tr></thead>
       <tbody>
         {% for i in upcoming_interviews %}
         <tr>
-          <td>{{ i.scheduled_date|date:"d M Y H:i" }}</td>
+          <td>{{ i.scheduled_date|date:"d M Y" }}</td>
           <td><a href="{% url 'candidate_timeline' i.candidate.pk %}">{{ i.candidate.full_name }}</a></td>
           <td>{{ i.get_round_type_display }}</td>
           <td>{{ i.interviewer|default:"Unassigned" }}</td>
           <td>{{ i.get_mode_display }}</td>
         </tr>
-        {% empty %}
-        <tr><td colspan="5" class="text-muted text-center">No upcoming interviews.</td></tr>
+        {% empty %}<tr><td colspan="5" class="text-muted text-center">No upcoming interviews.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  <a href="{% url 'interview_scheduler' %}" class="btn btn-outline-app btn-sm">Open Interview Scheduler</a>
+  <a href="{% url 'interview_scheduler' %}" class="btn btn-outline-app btn-sm">Open Interviews</a>
 </div>
 {% endblock %}

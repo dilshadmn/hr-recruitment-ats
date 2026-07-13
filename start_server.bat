@@ -1,6 +1,6 @@
 @echo off
 REM ================================================================
-REM  HR Recruitment Portal - local launcher
+REM  Applicant Tracking System - local launcher
 REM  Double-click this file to start the website on your PC.
 REM ================================================================
 cd /d "%~dp0"
@@ -23,7 +23,7 @@ REM --- Apply any pending database changes ---
 
 echo.
 echo ================================================================
-echo   HR Recruitment Portal is starting...
+echo   Applicant Tracking System is starting...
 echo   HR login:      http://localhost:8000/login/
 echo   Public careers page: http://localhost:8000/careers/
 echo.

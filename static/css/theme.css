@@ -181,6 +181,13 @@ table.dataTable tbody td {
   color: var(--dark-green);
   font-weight: 600;
 }
+.stat-card .text-primary-app { color: var(--primary-green); font-weight: 500; }
+.dash-clickable { transition: box-shadow .12s ease, transform .12s ease; }
+.dash-clickable:hover {
+  box-shadow: 0 4px 14px rgba(0, 140, 140, 0.18);
+  transform: translateY(-2px);
+  border-color: var(--primary-green);
+}
 
 .timeline-item {
   border-left: 2px solid var(--border-color);

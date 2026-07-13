@@ -14,6 +14,7 @@ urlpatterns = [
     path('hr/candidates/', views.CandidateRepositoryListView.as_view(), name='candidate_repository'),
     path('hr/candidates/<int:pk>/', views.CandidateTimelineView.as_view(), name='candidate_timeline'),
     path('hr/candidates/<int:pk>/edit/', views.CandidateUpdateView.as_view(), name='candidate_edit'),
+    path('hr/candidates/<int:pk>/change-job/', views.CandidateChangeJobView.as_view(), name='candidate_change_job'),
     path('hr/candidates/<int:pk>/note/', views.AddNoteView.as_view(), name='candidate_add_note'),
     path('hr/candidates/<int:pk>/log/', views.AddCommunicationLogView.as_view(), name='candidate_add_log'),
 
