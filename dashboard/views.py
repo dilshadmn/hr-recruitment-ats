@@ -12,12 +12,13 @@ STATUS = Candidate.Status
 
 
 def _summary_counts_qs(qs):
-    """Total / Open / Shortlisted / Rejected for a candidate queryset (one query)."""
+    """Total / Open / Shortlisted / Rejected / Hired for a candidate queryset (one query)."""
     return qs.aggregate(
         total=Count('id'),
         open=Count('id', filter=Q(status=STATUS.OPEN)),
         shortlisted=Count('id', filter=Q(status=STATUS.SHORTLISTED)),
         rejected=Count('id', filter=Q(status=STATUS.REJECTED)),
+        hired=Count('id', filter=Q(status=STATUS.HIRED)),
     )
 
 

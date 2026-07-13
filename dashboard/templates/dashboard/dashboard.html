@@ -87,10 +87,11 @@
   <div class="tab-pane fade {% if view != 'overview' %}show active{% endif %}" id="summaryPane">
     <div class="row g-3 mb-4">
       {% with s=summary %}
-      <div class="col-md-3 col-6"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Total Applicants</div><h2 class="mb-0">{{ s.total }}</h2></div></div>
-      <div class="col-md-3 col-6"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Open</div><h2 class="mb-0">{{ s.open }}</h2></div></div>
-      <div class="col-md-3 col-6"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Shortlisted</div><h2 class="mb-0">{{ s.shortlisted }}</h2></div></div>
-      <div class="col-md-3 col-6"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Rejected</div><h2 class="mb-0">{{ s.rejected }}</h2></div></div>
+      <div class="col-6 col-md"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Total Applicants</div><h2 class="mb-0">{{ s.total }}</h2></div></div>
+      <div class="col-6 col-md"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Open</div><h2 class="mb-0">{{ s.open }}</h2></div></div>
+      <div class="col-6 col-md"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Shortlisted</div><h2 class="mb-0">{{ s.shortlisted }}</h2></div></div>
+      <div class="col-6 col-md"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Rejected</div><h2 class="mb-0">{{ s.rejected }}</h2></div></div>
+      <div class="col-6 col-md"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Hired</div><h2 class="mb-0">{{ s.hired }}</h2></div></div>
       {% endwith %}
     </div>
     <div class="row g-3">
