@@ -128,10 +128,21 @@ def _s(v, limit=None):
 
 
 def _norm_source(v):
-    """Consolidate any referral-type source into a single 'Employee reference'."""
+    """Consolidate messy source variants into canonical names."""
     s = _s(v, 255)
-    if s and 'ref' in s.lower():
+    if not s:
+        return s
+    low = s.lower().strip()
+    if 'ref' in low:
         return 'Employee reference'
+    if 'linkedin' in low.replace(' ', ''):
+        return 'Linked In'
+    if 'luminar' in low:
+        return 'Luminar'
+    if 'recwire' in low:
+        return 'Recwire'
+    if low in ('careers', 'career mail', 'carees', 'hr mail', 'amrita', 'ameer'):
+        return 'Careers'
     return s
 
 
