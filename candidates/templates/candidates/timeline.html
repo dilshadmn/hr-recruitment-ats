@@ -155,8 +155,9 @@
       <form method="post" action="{% url 'candidate_add_log' candidate.pk %}" class="mb-3">
         {% csrf_token %}
         <div class="row g-2">
-          <div class="col-4">{{ comm_form.channel }}</div>
-          <div class="col-8">{{ comm_form.subject }}</div>
+          <div class="col-6">{{ comm_form.channel }}</div>
+          <div class="col-6">{{ comm_form.outcome }}</div>
+          <div class="col-12 mt-2">{{ comm_form.subject }}</div>
           <div class="col-12 mt-2">{{ comm_form.message }}</div>
         </div>
         <button type="submit" class="btn btn-sm btn-fill-app mt-2">Log Communication</button>

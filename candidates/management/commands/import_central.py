@@ -214,9 +214,10 @@ def build_stage_history(spec):
     reached = 0
     if sl or screened or call or current in STAGE_ORDER[1:]:
         reached = 1
-    if r1 or _s(sl.get('Round 1 Status')):
+    # a real Round-1/Interview outcome (not blank/N/A) counts as reaching that stage
+    if r1 or _interview_outcome(_s(sl.get('Round 1 Status'))):
         reached = max(reached, 2)
-    if iv or _s(sl.get('Interview Status')):
+    if iv or _interview_outcome(_s(sl.get('Interview Status'))):
         reached = max(reached, 3)
     if current in STAGE_ORDER:
         reached = max(reached, STAGE_ORDER.index(current))

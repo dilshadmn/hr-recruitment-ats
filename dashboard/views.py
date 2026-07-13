@@ -63,13 +63,16 @@ class HRDashboardView(GroupRequiredMixin, TemplateView):
 
         shortlisted = fc('ever_shortlisted')
         unfit = fc('unfit')
-        s_after_call, unable, yet_call = fc('shortlisted_after_call'), fc('unable_to_connect'), fc('call_pending')
-        r1_cleared, r1_sched, r1_ns, r1_yet = fc('r1_cleared'), fc('r1_scheduled'), fc('r1_no_show'), fc('r1_yet')
-        r2_cleared, r2_sched, r2_ns, r2_yet = fc('r2_cleared'), fc('r2_scheduled'), fc('r2_no_show'), fc('r2_yet')
-        on_hold, hired = fc('on_hold'), fc('hired')
-        off_pending, off_declined = fc('offer_pending'), fc('offer_declined')
+        s_after_call, unable = fc('shortlisted_after_call'), fc('unable_to_connect')
+        yet_call, rej_call = fc('call_pending'), fc('rejected_after_call')
+        r1_cleared, r1_sched, r1_ns, r1_yet, rej_r1 = (
+            fc('r1_cleared'), fc('r1_scheduled'), fc('r1_no_show'), fc('r1_yet'), fc('rejected_after_round1'))
+        r2_cleared, r2_sched, r2_ns, r2_yet, rej_r2 = (
+            fc('r2_cleared'), fc('r2_scheduled'), fc('r2_no_show'), fc('r2_yet'), fc('rejected_after_round2'))
+        on_hold, hired, rej_final = fc('on_hold'), fc('hired'), fc('rejected_after_final')
 
         ctx['funnel_top'] = {'total': base.count(), 'requirement': requirement, 'unfit': unfit}
+        # Corner "total" = everyone who got a decision at that stage (cleared + rejected-there)
         ctx['funnel'] = [
             {'name': 'Screening',
              'pending': ('Screening Pending', fc('open'), 'open'),
@@ -77,20 +80,20 @@ class HRDashboardView(GroupRequiredMixin, TemplateView):
              'drops': []},
             {'name': 'Call',
              'pending': ('Yet to Call', yet_call, 'call_pending'),
-             'cleared': ('Shortlisted After Call', s_after_call, s_after_call + unable + yet_call, 'shortlisted_after_call'),
+             'cleared': ('Shortlisted After Call', s_after_call, s_after_call + rej_call, 'shortlisted_after_call'),
              'drops': [('Unable to Connect', unable, 'unable_to_connect')]},
             {'name': 'Round 1',
              'pending': ('Yet to Schedule', r1_yet, 'r1_yet'),
-             'cleared': ('Round 1 Cleared', r1_cleared, r1_cleared + r1_sched + r1_ns + r1_yet, 'r1_cleared'),
+             'cleared': ('Round 1 Cleared', r1_cleared, r1_cleared + rej_r1, 'r1_cleared'),
              'drops': [('Scheduled', r1_sched, 'r1_scheduled'), ('Not Turned Up', r1_ns, 'r1_no_show')]},
             {'name': 'Round 2',
              'pending': ('Yet to Schedule', r2_yet, 'r2_yet'),
-             'cleared': ('Round 2 Cleared', r2_cleared, r2_cleared + r2_sched + r2_ns + r2_yet, 'r2_cleared'),
+             'cleared': ('Round 2 Cleared', r2_cleared, r2_cleared + rej_r2, 'r2_cleared'),
              'drops': [('Scheduled', r2_sched, 'r2_scheduled'), ('Not Turned Up', r2_ns, 'r2_no_show')]},
-            {'name': 'Offer',
+            {'name': 'Final Decision',
              'pending': ('On Hold', on_hold, 'on_hold'),
-             'cleared': ('Hired & Offer Accepted', hired, hired + off_pending + off_declined + on_hold, 'hired'),
-             'drops': [('Offer Pending', off_pending, 'offer_pending'), ('Offer Declined', off_declined, 'offer_declined')]},
+             'cleared': ('Hired', hired, hired + rej_r2 + rej_final, 'hired'),
+             'drops': []},
         ]
 
         ctx['upcoming_interviews'] = Interview.objects.select_related('candidate', 'interviewer').filter(
