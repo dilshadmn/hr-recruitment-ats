@@ -59,6 +59,8 @@ class Candidate(models.Model):
     is_duplicate = models.BooleanField(default=False)
     is_blacklisted = models.BooleanField(default=False)
     is_on_hold = models.BooleanField(default=False)
+    cv_summary = models.TextField('AI CV Summary', blank=True, null=True,
+                                  help_text='Short AI-generated summary of the resume.')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -177,14 +179,17 @@ class Note(models.Model):
 
 class CommunicationLog(models.Model):
     class Channel(models.TextChoices):
-        EMAIL = 'EMAIL', 'Email'
         PHONE = 'PHONE', 'Phone'
+        INTERVIEW = 'INTERVIEW', 'Interview'
+        EMAIL = 'EMAIL', 'Email'
         OTHER = 'OTHER', 'Other'
 
     class Outcome(models.TextChoices):
-        SHORTLISTED = 'SHORTLISTED', 'Shortlisted after call'
         UNABLE = 'UNABLE', 'Unable to connect'
         CALLBACK = 'CALLBACK', 'Call back'
+        NOT_TURNED_UP = 'NOT_TURNED_UP', 'Not turned up'
+        ATTENDED = 'ATTENDED', 'Attended'
+        SHORTLISTED = 'SHORTLISTED', 'Shortlisted after call'
         NOT_SHORTLISTED = 'NOT_SHORTLISTED', 'Not shortlisted'
 
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='communication_logs')

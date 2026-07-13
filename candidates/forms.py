@@ -83,13 +83,24 @@ class CandidateNoteForm(BootstrapFormMixin, forms.ModelForm):
 class CommunicationLogForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = CommunicationLog
-        fields = ['channel', 'outcome', 'subject', 'message']
-        labels = {'outcome': 'Call outcome (for phone screening)'}
-        widgets = {'message': forms.Textarea(attrs={'rows': 2})}
+        fields = ['channel', 'outcome', 'message']
+        labels = {'message': 'Remarks'}
+        widgets = {'message': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Enter remarks...'})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['channel'].choices = [
+            (CommunicationLog.Channel.PHONE, 'Phone'),
+            (CommunicationLog.Channel.INTERVIEW, 'Interview'),
+        ]
         self.fields['outcome'].required = False
+        self.fields['outcome'].choices = [
+            ('', '— Outcome —'),
+            (CommunicationLog.Outcome.UNABLE, 'Unable to connect'),
+            (CommunicationLog.Outcome.CALLBACK, 'Call back'),
+            (CommunicationLog.Outcome.NOT_TURNED_UP, 'Not turned up'),
+            (CommunicationLog.Outcome.ATTENDED, 'Attended'),
+        ]
         self._add_bootstrap_classes()
 
 

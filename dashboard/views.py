@@ -36,7 +36,10 @@ class HRDashboardView(GroupRequiredMixin, TemplateView):
         if scope == 'open':   # only candidates under currently-open vacancies
             base = base.filter(job__status=Job.Status.OPEN, job__is_archived=False)
 
-        ctx['jobs'] = Job.objects.all().order_by('title')
+        job_list = Job.objects.all().order_by('title')
+        if scope == 'open':
+            job_list = job_list.filter(status=Job.Status.OPEN, is_archived=False)
+        ctx['jobs'] = job_list
         ctx['selected_job'] = job_id
         ctx['scope'] = scope
         ctx['view'] = self.request.GET.get('view', 'summary')

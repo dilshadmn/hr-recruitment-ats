@@ -6,7 +6,8 @@
   <h3 class="mb-0">{{ candidate.full_name }} <span class="text-muted small">{{ candidate.candidate_code }}</span></h3>
   <div>
     <span class="{{ candidate.status|badge_class }}">{{ candidate.get_status_display }}</span>
-    {% if candidate.is_duplicate %}<span class="badge-dup ms-2">Reapply</span>{% endif %}
+    {% if reapply %}<span class="badge-dup ms-2">Reapply</span>{% endif %}
+    {% if candidate.is_blacklisted and candidate.status != 'BLACKLISTED' %}<span class="badge-status badge-blacklisted ms-2">Blacklisted</span>{% endif %}
     <a href="{% url 'candidate_edit' candidate.pk %}" class="btn btn-outline-app btn-sm ms-2">Edit</a>
     {% if can_revert %}
     <form method="post" action="{% url 'candidate_revert' candidate.pk %}" class="d-inline"
@@ -48,7 +49,14 @@
             <button type="submit" class="btn btn-sm btn-outline-app">Map</button>
           </form>
         </dd>
-        <dt class="col-sm-4">Source</dt><dd class="col-sm-8">{{ candidate.source|default:"-" }}</dd>
+        <dt class="col-sm-4">Source</dt>
+        <dd class="col-sm-8">
+          <form method="post" action="{% url 'candidate_change_source' candidate.pk %}" class="d-flex gap-2 align-items-center">
+            {% csrf_token %}
+            <input type="text" name="source" value="{{ candidate.source|default:'' }}" class="form-control form-control-sm" style="max-width: 220px;" placeholder="e.g. Careers">
+            <button type="submit" class="btn btn-sm btn-outline-app">Save</button>
+          </form>
+        </dd>
         <dt class="col-sm-4">LinkedIn</dt><dd class="col-sm-8">{% if candidate.linkedin %}<a href="{{ candidate.linkedin }}" target="_blank">{{ candidate.linkedin }}</a>{% else %}-{% endif %}</dd>
         <dt class="col-sm-4">Portfolio</dt><dd class="col-sm-8">{% if candidate.portfolio_url %}<a href="{{ candidate.portfolio_url }}" target="_blank">{{ candidate.portfolio_url }}</a>{% else %}-{% endif %}</dd>
         <dt class="col-sm-4">Notice Period</dt><dd class="col-sm-8">{{ candidate.notice_period|default:"-" }}</dd>
@@ -59,6 +67,15 @@
         <dt class="col-sm-4">Resume</dt><dd class="col-sm-8"><a href="{{ candidate.resume_blob_url.url }}" target="_blank">Download / Preview</a></dd>
         {% endif %}
       </dl>
+    </div>
+
+    <div class="card app-card p-4 mb-3">
+      <h5 class="mb-3"><i class="bi bi-stars"></i> AI CV Summary</h5>
+      {% if candidate.cv_summary %}
+        <p class="mb-0" style="white-space: pre-line;">{{ candidate.cv_summary }}</p>
+      {% else %}
+        <p class="text-muted mb-0">No AI summary yet — this is generated from the CV during careers intake.</p>
+      {% endif %}
     </div>
 
     <div class="card app-card p-4 mb-3">
@@ -150,25 +167,49 @@
       {% empty %}<p class="text-muted mb-0">No notes yet.</p>{% endfor %}
     </div>
 
-    <div class="card app-card p-4">
+    <div class="card app-card p-4 mb-3">
       <h5 class="mb-3">Communication Log</h5>
       <form method="post" action="{% url 'candidate_add_log' candidate.pk %}" class="mb-3">
         {% csrf_token %}
         <div class="row g-2">
           <div class="col-6">{{ comm_form.channel }}</div>
           <div class="col-6">{{ comm_form.outcome }}</div>
-          <div class="col-12 mt-2">{{ comm_form.subject }}</div>
           <div class="col-12 mt-2">{{ comm_form.message }}</div>
         </div>
-        <button type="submit" class="btn btn-sm btn-fill-app mt-2">Log Communication</button>
+        <button type="submit" class="btn btn-sm btn-fill-app mt-2">Add Log</button>
       </form>
       {% for l in communication_logs %}
         <div class="mb-2 pb-2 border-bottom">
-          <strong>{{ l.get_channel_display }}</strong>{% if l.subject %} - {{ l.subject }}{% endif %}
-          <div class="small">{{ l.message|default:"" }}</div>
+          <strong>{{ l.get_channel_display }}</strong>{% if l.outcome %} &middot; {{ l.get_outcome_display }}{% endif %}
+          {% if l.message %}<div class="small">{{ l.message }}</div>{% endif %}
           <div class="small text-muted">{{ l.logged_by|default:"Unknown" }} &middot; {{ l.logged_at|date:"d M Y H:i" }}</div>
         </div>
       {% empty %}<p class="text-muted mb-0">No communication logged yet.</p>{% endfor %}
+    </div>
+
+    <div class="card app-card p-4">
+      <h5 class="mb-3">Update Status</h5>
+      <form method="post" action="{% url 'candidate_set_status' candidate.pk %}">
+        {% csrf_token %}
+        <div class="row g-2">
+          <div class="col-12">
+            <select name="status" class="form-select form-select-sm" required>
+              <option value="">Select action…</option>
+              {% for value, label in status_actions %}
+              <option value="{{ value }}">Move to {{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <input type="text" name="performed_by" class="form-control form-control-sm"
+                   value="{{ user.get_full_name|default:user.get_username }}" placeholder="Done by">
+          </div>
+          <div class="col-12">
+            <textarea name="reason" class="form-control form-control-sm" rows="2" placeholder="Remarks / reason (optional)"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-sm btn-fill-app mt-2">Apply Action</button>
+      </form>
     </div>
   </div>
 </div>

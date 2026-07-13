@@ -2,7 +2,7 @@ import re
 import uuid
 
 from django.contrib import messages
-from django.db.models import Max, OuterRef, Q, Subquery
+from django.db.models import Exists, Max, OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -121,9 +121,12 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
         next_interview = (Interview.objects
                           .filter(candidate=OuterRef('pk')).order_by('-scheduled_date')
                           .values('scheduled_date')[:1])
+        # 'reapply' = the same email exists on another candidate record
+        dup = Candidate.objects.filter(email=OuterRef('email')).exclude(pk=OuterRef('pk'))
         qs = (Candidate.objects.select_related('job')
               .annotate(last_action_at=Subquery(last_action),
-                        interview_at=Subquery(next_interview)))
+                        interview_at=Subquery(next_interview),
+                        reapply=Exists(dup)))
 
         # A "flow" link (from the dashboard Overview) filters by a derived stage
         # set and overrides the normal current-status tab filter.
@@ -169,8 +172,12 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
         ctx['tab'] = 'all' if self.request.GET.get('flow') else self.get_tab()
         ctx['flow'] = self.request.GET.get('flow', '')
         ctx['tabs'] = REPOSITORY_TABS
-        ctx['jobs'] = Job.objects.all().order_by('title')
-        ctx['scope'] = self.request.GET.get('scope', '')
+        scope = self.request.GET.get('scope', '')
+        job_list = Job.objects.all().order_by('title')
+        if scope == 'open':
+            job_list = job_list.filter(status=Job.Status.OPEN, is_archived=False)
+        ctx['jobs'] = job_list
+        ctx['scope'] = scope
         # every current filter except the tab, so switching tabs keeps the vacancy/scope/search
         params = self.request.GET.copy()
         params.pop('tab', None)
@@ -234,6 +241,10 @@ class CandidateTimelineView(GroupRequiredMixin, DetailView):
         ctx['is_hr_admin'] = u.is_superuser or u.groups.filter(name=HR_ADMIN).exists()
         ctx['can_revert'] = ctx['is_hr_admin'] or u.groups.filter(name=RECRUITER).exists()
         ctx['all_jobs'] = Job.objects.all().order_by('title')
+        # same email seen on another record => reapply
+        ctx['reapply'] = Candidate.objects.filter(email=candidate.email).exclude(pk=candidate.pk).exists()
+        # actions the user can move this candidate to (all statuses except the current one)
+        ctx['status_actions'] = [(v, l) for v, l in Candidate.Status.choices if v != candidate.status]
         return ctx
 
 
@@ -267,6 +278,45 @@ class CandidateChangeJobView(GroupRequiredMixin, View):
             Note.objects.create(candidate=candidate, author=request.user,
                                 text=f'Vacancy changed: {old} -> {new}')
             messages.success(request, f'Vacancy updated to "{new}".')
+        return redirect('candidate_timeline', pk=pk)
+
+
+class CandidateChangeSourceView(GroupRequiredMixin, View):
+    """Manually edit a candidate's recruitment source."""
+    allowed_groups = (HR_ADMIN, RECRUITER, HIRING_MANAGER)
+
+    def post(self, request, pk):
+        candidate = get_object_or_404(Candidate, pk=pk)
+        old = candidate.source or 'None'
+        new = request.POST.get('source', '').strip() or None
+        candidate.source = new
+        candidate.save(update_fields=['source', 'updated_at'])
+        if old != (new or 'None'):
+            Note.objects.create(candidate=candidate, author=request.user,
+                                text=f'Source changed: {old} -> {new or "None"}')
+        messages.success(request, 'Source updated.')
+        return redirect('candidate_timeline', pk=pk)
+
+
+class CandidateSetStatusView(GroupRequiredMixin, View):
+    """Move a candidate to a chosen status straight from their page (the
+    'Update status' box), logging it to the activity history."""
+    allowed_groups = (HR_ADMIN, RECRUITER, HIRING_MANAGER)
+
+    def post(self, request, pk):
+        candidate = get_object_or_404(Candidate, pk=pk)
+        target = request.POST.get('status')
+        if target not in {s for s, _ in Candidate.Status.choices}:
+            messages.error(request, 'Please choose a valid action.')
+            return redirect('candidate_timeline', pk=pk)
+        reason = request.POST.get('reason', '').strip()
+        performed_by = _performed_by(request)
+        if target == STATUS.BLACKLISTED:
+            services.blacklist_candidate(candidate, reason, user=request.user, performed_by=performed_by)
+        else:
+            services.change_status(candidate, target, user=request.user,
+                                   remarks=reason or None, performed_by=performed_by)
+        messages.success(request, f'{candidate.full_name} moved to "{candidate.get_status_display()}".')
         return redirect('candidate_timeline', pk=pk)
 
 

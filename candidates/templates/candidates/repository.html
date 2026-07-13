@@ -2,26 +2,27 @@
 {% load candidates_extras %}
 {% block title %}Candidate Repository{% endblock %}
 {% block content %}
-<h3 class="mb-3">Candidate Repository</h3>
-
 <form method="get">
   <input type="hidden" name="tab" value="{{ tab }}">
 
-  {# Vacancy + scope sit ABOVE the tabs and stay selected as you switch tabs #}
-  <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
-    <div>
-      <label class="form-label small text-muted mb-0">Vacancy</label>
-      <select name="job" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 280px;">
-        <option value="">All vacancies</option>
-        {% for job in jobs %}
-        <option value="{{ job.id }}" {% if request.GET.job == job.id|stringformat:"s" %}selected{% endif %}>{{ job.title }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-check form-switch mb-1">
-      <input type="checkbox" class="form-check-input" role="switch" id="scopeSwitch"
-             name="scope" value="open" {% if scope == 'open' %}checked{% endif %} onchange="this.form.submit()">
-      <label class="form-check-label small text-muted" for="scopeSwitch">Open vacancies only</label>
+  {# Heading on the left; vacancy + scope on the top-right, staying selected across tabs #}
+  <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-3">
+    <h3 class="mb-0">Candidate Repository</h3>
+    <div class="d-flex align-items-end gap-3">
+      <div>
+        <label class="form-label small text-muted mb-0">Vacancy</label>
+        <select name="job" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 260px;">
+          <option value="">All vacancies</option>
+          {% for job in jobs %}
+          <option value="{{ job.id }}" {% if request.GET.job == job.id|stringformat:"s" %}selected{% endif %}>{{ job.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-check form-switch mb-1">
+        <input type="checkbox" class="form-check-input" role="switch" id="scopeSwitch"
+               name="scope" value="open" {% if scope == 'open' %}checked{% endif %} onchange="this.form.submit()">
+        <label class="form-check-label small text-muted" for="scopeSwitch">Open vacancies only</label>
+      </div>
     </div>
   </div>
 
@@ -80,7 +81,8 @@
           <td>{{ c.interview_at|date:"d M Y"|default:"-" }}</td>
           <td>{{ c.last_action_at|date:"d M Y"|default:"-" }}</td>
           <td><span class="{{ c.status|badge_class }}">{{ c.get_status_display }}</span>
-            {% if c.is_duplicate %}<span class="badge-dup ms-1">Reapply</span>{% endif %}</td>
+            {% if c.reapply %}<span class="badge-dup ms-1">Reapply</span>{% endif %}
+            {% if c.is_blacklisted and c.status != 'BLACKLISTED' %}<span class="badge-status badge-blacklisted ms-1">Blacklisted</span>{% endif %}</td>
           <td class="text-nowrap">
             <a href="{% url 'candidate_timeline' c.id %}" class="btn btn-sm btn-outline-app">View</a>
             {% if c.resume_url %}<a href="{{ c.resume_url }}" target="_blank" class="btn btn-sm btn-outline-app">CV</a>
