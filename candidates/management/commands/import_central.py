@@ -135,6 +135,29 @@ def _norm_source(v):
     return s
 
 
+def _call_outcome(raw):
+    """Map an Excel 'Call Status' to a CommunicationLog.Outcome, or None."""
+    from candidates.models import CommunicationLog as CL
+    s = (raw or '').strip().lower()
+    if s == 'nr' or 'non reachable' in s or 'unable' in s:
+        return CL.Outcome.UNABLE
+    if 'call back' in s or s == 'callback':
+        return CL.Outcome.CALLBACK
+    if 'not shortlist' in s:
+        return CL.Outcome.NOT_SHORTLISTED
+    if 'shortlist' in s:
+        return CL.Outcome.SHORTLISTED
+    return None
+
+
+def _is_hold(sl):
+    """True if the Shortlisted row indicates the candidate is on hold."""
+    if not sl:
+        return False
+    blob = f"{sl.get('Final Status') or ''} {sl.get('Current Stage') or ''}".lower()
+    return 'hold' in blob
+
+
 def _as_datetime(v):
     if isinstance(v, datetime):
         return v if timezone.is_aware(v) else timezone.make_aware(v)
@@ -302,9 +325,11 @@ class Command(BaseCommand):
             if dry:
                 jobs[title] = title
                 continue
+            openings = int(req) if isinstance(req, (int, float)) else 1
             job, _ = Job.objects.get_or_create(
                 title=title,
                 defaults={'job_code': code, 'status': status, 'closing_date': closing,
+                          'openings': openings,
                           'requirements': f'Openings: {req}' if req else None})
             jobs[title] = job
         if dry:
@@ -349,6 +374,7 @@ class Command(BaseCommand):
                 source=_norm_source(d.get('Source')), status=status,
                 appdate=_as_datetime(d.get('Mail Date')),
                 screened_on=_as_datetime(d.get('Screened On')), sl=sl, notes=notes,
+                on_hold=_is_hold(sl),
                 hist_remark='Imported from Central Repository.xlsx', from_shortlisted=False))
 
     def _collect_shortlisted_only(self, shortlisted, jobs, specs, seen_emails, seen_names):
@@ -379,7 +405,7 @@ class Command(BaseCommand):
                 source=_norm_source(d.get('Source')), status=status,
                 appdate=_as_datetime(d.get('Resume Received')),
                 screened_on=_as_datetime(d.get('Screened On')), sl=d,
-                notes=[t for t in (note_text,) if t],
+                notes=[t for t in (note_text,) if t], on_hold=_is_hold(d),
                 hist_remark='Imported from Central Repository.xlsx (Shortlisted sheet)',
                 from_shortlisted=True))
 
@@ -407,7 +433,8 @@ class Command(BaseCommand):
                 full_name=sp['full_name'], email=sp['email'], phone=sp['phone'],
                 job=jobs.get(sp['role']), qualification=sp['qual'],
                 resume_url=sp['resume_url'], source=sp['source'],
-                status=sp['status'], is_duplicate=sp['is_dup'])
+                status=sp['status'], is_duplicate=sp['is_dup'],
+                is_on_hold=sp.get('on_hold', False))
             c._sp = sp
             cands.append(c)
 
@@ -515,6 +542,7 @@ class Command(BaseCommand):
                     candidate=c, channel=CommunicationLog.Channel.PHONE,
                     subject=f"Screening call: {call_status or 'made'}"[:255],
                     message=_s(d.get('Call Remarks ')),
+                    outcome=_call_outcome(call_status),
                     logged_at=call_date or c.created_at or timezone.now()))
 
             # Round 1 + Interview -> Interview records

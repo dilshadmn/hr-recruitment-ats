@@ -1,7 +1,8 @@
-from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Q
+from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Q, Sum
 from django.utils import timezone
 from django.views.generic import TemplateView
 
+from candidates.flows import flow_count
 from candidates.models import Candidate, CandidateStatusHistory
 from candidates.permissions import ANY_STAFF, GroupRequiredMixin
 from interviews.models import Interview
@@ -51,31 +52,45 @@ class HRDashboardView(GroupRequiredMixin, TemplateView):
                                       rejected=Count('id', filter=Q(status=STATUS.REJECTED)))
                             .order_by('-total'))
 
-        # ---------- Overview (stage flow, from history + interviews, not just
-        # current status). Each item: (label, value, repository-tab or None) ----------
-        R1 = Interview.RoundType.ROUND1
-        PASS = Interview.Result.PASS_
-        SCHED = Interview.Status.SCHEDULED
-        NON_R1 = [t for t, _ in Interview.RoundType.choices if t != R1]
+        # ---------- Overview: recruitment funnel (Power BI style). Counts come
+        # from candidates.flows so a card and its drill-down list always match. ----------
+        def fc(flow):
+            return flow_count(base, flow)
 
-        def cnt(qs):
-            return qs.distinct().count()
+        jobs_scope = (Job.objects.filter(pk=job_id) if job_id
+                      else Job.objects.filter(status=Job.Status.OPEN, is_archived=False))
+        requirement = jobs_scope.aggregate(s=Sum('openings'))['s'] or 0
 
-        # Each item: (label, value, querystring for the candidate list link).
-        ctx['overview'] = [
-            ('Total Applicants', base.count(), 'tab=all'),
-            ('Open', base.filter(status=STATUS.OPEN).count(), 'tab=open'),
-            ('Shortlisted', cnt(base.filter(history__new_status=STATUS.SHORTLISTED)), 'flow=ever_shortlisted'),
-            ('Call Pending', cnt(base.filter(status=STATUS.SHORTLISTED, communication_logs__isnull=True)), 'flow=call_pending'),
-            ('Round 1 Pending', base.filter(status=STATUS.ROUND1).count(), 'tab=round1'),
-            ('Round 1 Cleared', cnt(base.filter(interviews__round_type=R1, interviews__result=PASS)), 'flow=round1_cleared'),
-            ('Interview Pending', cnt(base.filter(status=STATUS.INTERVIEW).exclude(interviews__status=SCHED)), 'tab=interview'),
-            ('Interview Scheduled', cnt(base.filter(interviews__status=SCHED)), 'flow=interview_scheduled'),
-            ('Interview Cleared', cnt(base.filter(interviews__result=PASS, interviews__round_type__in=NON_R1)), 'flow=interview_cleared'),
-            ('Final Selection Pending', base.filter(status=STATUS.FINAL_SELECTION).count(), 'tab=final_selection'),
-            ('Hired', base.filter(status=STATUS.HIRED).count(), 'tab=hired'),
-            ('Rejected', base.filter(status=STATUS.REJECTED).count(), 'tab=rejected'),
-            ('Blacklisted', base.filter(status=STATUS.BLACKLISTED).count(), 'tab=blacklisted'),
+        shortlisted = fc('ever_shortlisted')
+        unfit = fc('unfit')
+        s_after_call, unable, yet_call = fc('shortlisted_after_call'), fc('unable_to_connect'), fc('call_pending')
+        r1_cleared, r1_sched, r1_ns, r1_yet = fc('r1_cleared'), fc('r1_scheduled'), fc('r1_no_show'), fc('r1_yet')
+        r2_cleared, r2_sched, r2_ns, r2_yet = fc('r2_cleared'), fc('r2_scheduled'), fc('r2_no_show'), fc('r2_yet')
+        on_hold, hired = fc('on_hold'), fc('hired')
+        off_pending, off_declined = fc('offer_pending'), fc('offer_declined')
+
+        ctx['funnel_top'] = {'total': base.count(), 'requirement': requirement, 'unfit': unfit}
+        ctx['funnel'] = [
+            {'name': 'Screening',
+             'pending': ('Screening Pending', fc('open'), 'open'),
+             'cleared': ('Screened & Shortlisted', shortlisted, shortlisted + unfit, 'ever_shortlisted'),
+             'drops': []},
+            {'name': 'Call',
+             'pending': ('Yet to Call', yet_call, 'call_pending'),
+             'cleared': ('Shortlisted After Call', s_after_call, s_after_call + unable + yet_call, 'shortlisted_after_call'),
+             'drops': [('Unable to Connect', unable, 'unable_to_connect')]},
+            {'name': 'Round 1',
+             'pending': ('Yet to Schedule', r1_yet, 'r1_yet'),
+             'cleared': ('Round 1 Cleared', r1_cleared, r1_cleared + r1_sched + r1_ns + r1_yet, 'r1_cleared'),
+             'drops': [('Scheduled', r1_sched, 'r1_scheduled'), ('Not Turned Up', r1_ns, 'r1_no_show')]},
+            {'name': 'Round 2',
+             'pending': ('Yet to Schedule', r2_yet, 'r2_yet'),
+             'cleared': ('Round 2 Cleared', r2_cleared, r2_cleared + r2_sched + r2_ns + r2_yet, 'r2_cleared'),
+             'drops': [('Scheduled', r2_sched, 'r2_scheduled'), ('Not Turned Up', r2_ns, 'r2_no_show')]},
+            {'name': 'Offer',
+             'pending': ('On Hold', on_hold, 'on_hold'),
+             'cleared': ('Hired & Offer Accepted', hired, hired + off_pending + off_declined + on_hold, 'hired'),
+             'drops': [('Offer Pending', off_pending, 'offer_pending'), ('Offer Declined', off_declined, 'offer_declined')]},
         ]
 
         ctx['upcoming_interviews'] = Interview.objects.select_related('candidate', 'interviewer').filter(

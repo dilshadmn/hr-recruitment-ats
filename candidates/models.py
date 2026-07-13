@@ -58,6 +58,7 @@ class Candidate(models.Model):
 
     is_duplicate = models.BooleanField(default=False)
     is_blacklisted = models.BooleanField(default=False)
+    is_on_hold = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -180,8 +181,15 @@ class CommunicationLog(models.Model):
         PHONE = 'PHONE', 'Phone'
         OTHER = 'OTHER', 'Other'
 
+    class Outcome(models.TextChoices):
+        SHORTLISTED = 'SHORTLISTED', 'Shortlisted after call'
+        UNABLE = 'UNABLE', 'Unable to connect'
+        CALLBACK = 'CALLBACK', 'Call back'
+        NOT_SHORTLISTED = 'NOT_SHORTLISTED', 'Not shortlisted'
+
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='communication_logs')
     channel = models.CharField(max_length=20, choices=Channel.choices, default=Channel.EMAIL)
+    outcome = models.CharField(max_length=20, choices=Outcome.choices, blank=True, null=True)
     subject = models.CharField(max_length=255, blank=True, null=True)
     message = models.TextField(blank=True, null=True)
     logged_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
