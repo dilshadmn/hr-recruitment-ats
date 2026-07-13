@@ -1,5 +1,64 @@
 {% extends "hr_base.html" %}
 {% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ===== Recruitment funnel (self-contained so it never depends on cached CSS) ===== */
+.fnl-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 22px; }
+.fnl-kpi {
+  background: #fff; border: 1px solid #e2ebeb; border-left: 5px solid #008C8C;
+  border-radius: 12px; padding: 16px 20px; display: flex; align-items: center;
+  justify-content: space-between; box-shadow: 0 1px 3px rgba(16,24,40,.05);
+}
+.fnl-kpi.blue  { border-left-color: #2f6fed; }
+.fnl-kpi.red   { border-left-color: #e5484d; }
+.fnl-kpi .lbl  { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: #6b7a7a; font-weight: 600; }
+.fnl-kpi .val  { font-size: 1.9rem; font-weight: 700; color: #1f2a2a; }
+.fnl-kpi a, .fnl-kpi { text-decoration: none; }
+
+.fnl-scroll { overflow-x: auto; padding-bottom: 10px; }
+.fnl-row { display: flex; gap: 18px; min-width: min-content; }
+.fnl-col { flex: 1 0 200px; display: flex; flex-direction: column; }
+.fnl-stage {
+  text-align: center; font-size: .74rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: #008C8C; margin-bottom: 10px;
+}
+.fnl-box { display: block; text-decoration: none; color: inherit; transition: transform .12s ease, box-shadow .12s ease; }
+.fnl-box:hover { transform: translateY(-2px); }
+
+.fnl-pending {
+  background: #eaf5f5; border: 1px solid #cfe6e6; border-radius: 10px;
+  padding: 10px 8px; text-align: center;
+}
+.fnl-pending .n { font-size: 1.5rem; font-weight: 700; color: #0a6b6b; line-height: 1.1; }
+.fnl-pending .t { font-size: .66rem; text-transform: uppercase; letter-spacing: .4px; color: #5f7373; }
+.fnl-pending:hover { box-shadow: 0 4px 12px rgba(0,140,140,.15); }
+
+.fnl-link { width: 2px; height: 18px; background: #cfe0e0; margin: 4px auto; }
+
+.fnl-big {
+  position: relative; background: #fff; border: 2px solid #008C8C; border-radius: 12px;
+  padding: 18px 12px 26px; text-align: center; min-height: 128px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.fnl-big:hover { box-shadow: 0 6px 18px rgba(0,140,140,.20); }
+.fnl-big .t { font-size: .68rem; text-transform: uppercase; letter-spacing: .4px; color: #5f7373; margin-bottom: 4px; }
+.fnl-big .n { font-size: 2.3rem; font-weight: 700; color: #1f2a2a; line-height: 1; }
+.fnl-big .of { position: absolute; right: 12px; bottom: 8px; font-size: .8rem; color: #9aabab; }
+.fnl-big .of small { color: #b7c5c5; }
+
+.fnl-drops { display: flex; gap: 8px; margin-top: 12px; }
+.fnl-drop {
+  flex: 1; background: #f6f8f8; border: 1px solid #e2ebeb; border-radius: 9px;
+  padding: 8px 4px; text-align: center;
+}
+.fnl-drop:hover { box-shadow: 0 3px 10px rgba(16,24,40,.10); border-color: #cbd9d9; }
+.fnl-drop .n { font-size: 1.15rem; font-weight: 700; color: #3a4a4a; }
+.fnl-drop .t { font-size: .6rem; text-transform: uppercase; letter-spacing: .3px; color: #7a8a8a; }
+@media (max-width: 700px) { .fnl-kpis { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
   <h3 class="mb-0">Dashboard</h3>
@@ -34,7 +93,6 @@
       <div class="col-md-3 col-6"><div class="card app-card stat-card p-3 text-center h-100"><div class="text-muted small">Rejected</div><h2 class="mb-0">{{ s.rejected }}</h2></div></div>
       {% endwith %}
     </div>
-
     <div class="row g-3">
       <div class="col-lg-6">
         <div class="card app-card p-3">
@@ -72,54 +130,42 @@
   <!-- ===================== OVERVIEW (recruitment funnel) ===================== -->
   <div class="tab-pane fade {% if view == 'overview' %}show active{% endif %}" id="overviewPane">
     {% with jobq=selected_job %}
-    {# helper macro-like: build link suffix #}
-    <div class="row g-3 mb-4 align-items-center">
-      <div class="col-md-4"><div class="card app-card p-3 d-flex flex-row justify-content-between align-items-center"><span class="text-muted small text-uppercase">Total Resumes</span><span class="h3 mb-0">{{ funnel_top.total }}</span></div></div>
-      <div class="col-md-4"><div class="card app-card p-3 d-flex flex-row justify-content-between align-items-center"><span class="text-muted small text-uppercase">Requirement</span><span class="h3 mb-0">{{ funnel_top.requirement }}</span></div></div>
-      <div class="col-md-4">
-        <a href="{% url 'candidate_repository' %}?flow=unfit{% if jobq %}&job={{ jobq }}{% endif %}" class="text-decoration-none">
-          <div class="card app-card p-3 d-flex flex-row justify-content-between align-items-center dash-clickable"><span class="text-muted small text-uppercase">Unfit Resumes</span><span class="h3 mb-0">{{ funnel_top.unfit }}</span></div>
-        </a>
-      </div>
+    <div class="fnl-kpis">
+      <div class="fnl-kpi"><div><div class="lbl">Total Resumes</div></div><div class="val">{{ funnel_top.total }}</div></div>
+      <div class="fnl-kpi blue"><div><div class="lbl">Requirement</div></div><div class="val">{{ funnel_top.requirement }}</div></div>
+      <a class="fnl-kpi red" href="{% url 'candidate_repository' %}?flow=unfit{% if jobq %}&job={{ jobq }}{% endif %}">
+        <div><div class="lbl">Unfit Resumes</div></div><div class="val">{{ funnel_top.unfit }}</div>
+      </a>
     </div>
 
-    <p class="text-muted small mb-3">Recruitment funnel across the whole pipeline (from each candidate's history, not just current status). Every box is clickable and opens the matching candidate list.</p>
-
-    <div class="funnel-row">
-      {% for stage in funnel %}
-      <div class="funnel-col">
-        <div class="funnel-stage-name">{{ stage.name }}</div>
-        {# pending (top) #}
-        <a href="{% url 'candidate_repository' %}?flow={{ stage.pending.2 }}{% if jobq %}&job={{ jobq }}{% endif %}" class="text-decoration-none">
-          <div class="funnel-pending dash-clickable">
-            <div class="funnel-label">{{ stage.pending.0 }}</div>
-            <div class="funnel-num">{{ stage.pending.1 }}</div>
-          </div>
-        </a>
-        <div class="funnel-connector"></div>
-        {# cleared (big) #}
-        <a href="{% url 'candidate_repository' %}?flow={{ stage.cleared.3 }}{% if jobq %}&job={{ jobq }}{% endif %}" class="text-decoration-none">
-          <div class="funnel-big dash-clickable">
-            <div class="funnel-label">{{ stage.cleared.0 }}</div>
-            <div class="funnel-big-num">{{ stage.cleared.1 }}</div>
-            <div class="funnel-total">{{ stage.cleared.2 }}</div>
-          </div>
-        </a>
-        {# drops (bottom) #}
-        {% if stage.drops %}
-        <div class="funnel-drops">
-          {% for d in stage.drops %}
-          <a href="{% url 'candidate_repository' %}?flow={{ d.2 }}{% if jobq %}&job={{ jobq }}{% endif %}" class="text-decoration-none">
-            <div class="funnel-drop dash-clickable">
-              <div class="funnel-num-sm">{{ d.1 }}</div>
-              <div class="funnel-label-sm">{{ d.0 }}</div>
+    <div class="fnl-scroll">
+      <div class="fnl-row">
+        {% for stage in funnel %}
+        <div class="fnl-col">
+          <div class="fnl-stage">{{ stage.name }}</div>
+          <a class="fnl-box" href="{% url 'candidate_repository' %}?flow={{ stage.pending.2 }}{% if jobq %}&job={{ jobq }}{% endif %}">
+            <div class="fnl-pending"><div class="n">{{ stage.pending.1 }}</div><div class="t">{{ stage.pending.0 }}</div></div>
+          </a>
+          <div class="fnl-link"></div>
+          <a class="fnl-box" href="{% url 'candidate_repository' %}?flow={{ stage.cleared.3 }}{% if jobq %}&job={{ jobq }}{% endif %}">
+            <div class="fnl-big">
+              <div class="t">{{ stage.cleared.0 }}</div>
+              <div class="n">{{ stage.cleared.1 }}</div>
+              <div class="of">{{ stage.cleared.2 }} <small>total</small></div>
             </div>
           </a>
-          {% endfor %}
+          {% if stage.drops %}
+          <div class="fnl-drops">
+            {% for d in stage.drops %}
+            <a class="fnl-box" style="flex:1" href="{% url 'candidate_repository' %}?flow={{ d.2 }}{% if jobq %}&job={{ jobq }}{% endif %}">
+              <div class="fnl-drop"><div class="n">{{ d.1 }}</div><div class="t">{{ d.0 }}</div></div>
+            </a>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
-        {% endif %}
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
     {% endwith %}
   </div>
