@@ -22,6 +22,14 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()]
 
+# Comma-separated https origins Django should trust for CSRF (your App Service URL),
+# e.g. https://hr-ats.azurewebsites.net
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+
+# Azure App Service terminates TLS at the front end; trust the forwarded proto
+# so Django knows the request is HTTPS (correct redirects, secure cookies).
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -39,6 +47,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # serves static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -130,14 +139,19 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files
+# Static files (WhiteNoise serves them directly from the app in production)
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 
-# Media (CV uploads) - local for now, swap the storage backend for Azure Blob later.
+# Media (CV uploads). On Azure App Service set MEDIA_ROOT=/home/media so uploads
+# persist across restarts/deploys (the /home volume is persisted).
 MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.environ.get("MEDIA_ROOT", BASE_DIR / 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

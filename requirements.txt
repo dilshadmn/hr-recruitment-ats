@@ -3,5 +3,10 @@ python-dotenv>=1.0
 # Azure SQL / SQL Server
 mssql-django>=1.5
 pyodbc>=5.0
+# Production web server + static files
+gunicorn>=21.0
+whitenoise>=6.6
+# Excel import (management command)
+openpyxl>=3.1
 # PostgreSQL (optional, only if DB_ENGINE=postgres)
 psycopg2-binary>=2.9
