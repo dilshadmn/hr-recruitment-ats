@@ -29,12 +29,16 @@ class HRDashboardView(GroupRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         job_id = self.request.GET.get('job') or ''
+        scope = self.request.GET.get('scope', '')
         base = Candidate.objects.all()
         if job_id:
             base = base.filter(job_id=job_id)
+        if scope == 'open':   # only candidates under currently-open vacancies
+            base = base.filter(job__status=Job.Status.OPEN, job__is_archived=False)
 
         ctx['jobs'] = Job.objects.all().order_by('title')
         ctx['selected_job'] = job_id
+        ctx['scope'] = scope
         ctx['view'] = self.request.GET.get('view', 'summary')
 
         # ---------- Summary ----------

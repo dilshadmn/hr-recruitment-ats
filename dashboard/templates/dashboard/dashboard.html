@@ -62,7 +62,7 @@
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
   <h3 class="mb-0">Dashboard</h3>
-  <form method="get" class="d-flex align-items-end gap-2">
+  <form method="get" class="d-flex align-items-end gap-3">
     <input type="hidden" name="view" value="{{ view }}">
     <div>
       <label class="form-label small text-muted mb-0">Vacancy</label>
@@ -72,6 +72,11 @@
         <option value="{{ j.id }}" {% if selected_job == j.id|stringformat:'s' %}selected{% endif %}>{{ j.title }}</option>
         {% endfor %}
       </select>
+    </div>
+    <div class="form-check form-switch mb-1">
+      <input type="checkbox" class="form-check-input" role="switch" id="scopeSwitch"
+             name="scope" value="open" {% if scope == 'open' %}checked{% endif %} onchange="this.form.submit()">
+      <label class="form-check-label small text-muted" for="scopeSwitch">Open vacancies only</label>
     </div>
     <noscript><button class="btn btn-sm btn-primary-app">Go</button></noscript>
   </form>

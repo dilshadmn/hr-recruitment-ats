@@ -4,45 +4,58 @@
 {% block content %}
 <h3 class="mb-3">Candidate Repository</h3>
 
-<ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto">
-  {% for key, label, status in tabs %}
-  <li class="nav-item"><a class="nav-link text-nowrap {% if tab == key %}active{% endif %}" href="?tab={{ key }}">{{ label }}</a></li>
-  {% endfor %}
-</ul>
-
-<form method="get" class="row g-2 mb-3 align-items-end">
+<form method="get">
   <input type="hidden" name="tab" value="{{ tab }}">
-  <div class="col-md-2">
-    <label class="form-label small text-muted mb-0">Search</label>
-    <input type="text" name="q" value="{{ request.GET.q|default:'' }}" class="form-control" placeholder="Name or email">
+
+  {# Vacancy + scope sit ABOVE the tabs and stay selected as you switch tabs #}
+  <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+    <div>
+      <label class="form-label small text-muted mb-0">Vacancy</label>
+      <select name="job" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 280px;">
+        <option value="">All vacancies</option>
+        {% for job in jobs %}
+        <option value="{{ job.id }}" {% if request.GET.job == job.id|stringformat:"s" %}selected{% endif %}>{{ job.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-check form-switch mb-1">
+      <input type="checkbox" class="form-check-input" role="switch" id="scopeSwitch"
+             name="scope" value="open" {% if scope == 'open' %}checked{% endif %} onchange="this.form.submit()">
+      <label class="form-check-label small text-muted" for="scopeSwitch">Open vacancies only</label>
+    </div>
   </div>
-  <div class="col-md-2">
-    <label class="form-label small text-muted mb-0">Skill</label>
-    <input type="text" name="skill" value="{{ request.GET.skill|default:'' }}" class="form-control" placeholder="e.g. Python">
-  </div>
-  <div class="col-md-2">
-    <label class="form-label small text-muted mb-0">Job</label>
-    <select name="job" class="form-select">
-      <option value="">All jobs</option>
-      {% for job in jobs %}
-      <option value="{{ job.id }}" {% if request.GET.job == job.id|stringformat:"s" %}selected{% endif %}>{{ job.title }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-md-1">
-    <label class="form-label small text-muted mb-0">Min Exp.</label>
-    <input type="number" step="0.5" name="min_experience" value="{{ request.GET.min_experience|default:'' }}" class="form-control">
-  </div>
-  <div class="col-md-2">
-    <label class="form-label small text-muted mb-0">Applied From</label>
-    <input type="date" name="date_from" value="{{ request.GET.date_from|default:'' }}" class="form-control">
-  </div>
-  <div class="col-md-2">
-    <label class="form-label small text-muted mb-0">Applied To</label>
-    <input type="date" name="date_to" value="{{ request.GET.date_to|default:'' }}" class="form-control">
-  </div>
-  <div class="col-md-1">
-    <button type="submit" class="btn btn-primary-app w-100"><i class="bi bi-search"></i></button>
+
+  <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto">
+    {% for key, label, status in tabs %}
+    <li class="nav-item"><a class="nav-link text-nowrap {% if tab == key %}active{% endif %}"
+        href="?tab={{ key }}{% if preserved_qs %}&{{ preserved_qs }}{% endif %}">{{ label }}</a></li>
+    {% endfor %}
+  </ul>
+
+  <div class="row g-2 mb-3 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label small text-muted mb-0">Search</label>
+      <input type="text" name="q" value="{{ request.GET.q|default:'' }}" class="form-control" placeholder="Name or email">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small text-muted mb-0">Skill</label>
+      <input type="text" name="skill" value="{{ request.GET.skill|default:'' }}" class="form-control" placeholder="e.g. Python">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small text-muted mb-0">Min Exp.</label>
+      <input type="number" step="0.5" name="min_experience" value="{{ request.GET.min_experience|default:'' }}" class="form-control">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small text-muted mb-0">Applied From</label>
+      <input type="date" name="date_from" value="{{ request.GET.date_from|default:'' }}" class="form-control">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small text-muted mb-0">Applied To</label>
+      <input type="date" name="date_to" value="{{ request.GET.date_to|default:'' }}" class="form-control">
+    </div>
+    <div class="col-md-1">
+      <button type="submit" class="btn btn-primary-app w-100"><i class="bi bi-search"></i></button>
+    </div>
   </div>
 </form>
 

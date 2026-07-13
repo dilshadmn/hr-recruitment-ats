@@ -139,6 +139,9 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
         if job_id:
             qs = qs.filter(job_id=job_id)
 
+        if self.request.GET.get('scope') == 'open':
+            qs = qs.filter(job__status=Job.Status.OPEN, job__is_archived=False)
+
         skill = self.request.GET.get('skill')
         if skill:
             qs = qs.filter(skills__icontains=skill)
@@ -166,7 +169,12 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
         ctx['tab'] = 'all' if self.request.GET.get('flow') else self.get_tab()
         ctx['flow'] = self.request.GET.get('flow', '')
         ctx['tabs'] = REPOSITORY_TABS
-        ctx['jobs'] = Job.objects.all()
+        ctx['jobs'] = Job.objects.all().order_by('title')
+        ctx['scope'] = self.request.GET.get('scope', '')
+        # every current filter except the tab, so switching tabs keeps the vacancy/scope/search
+        params = self.request.GET.copy()
+        params.pop('tab', None)
+        ctx['preserved_qs'] = params.urlencode()
         u = self.request.user
         ctx['is_hr_admin'] = u.is_superuser or u.groups.filter(name=HR_ADMIN).exists()
         return ctx
