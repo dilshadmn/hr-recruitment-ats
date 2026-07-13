@@ -53,15 +53,17 @@ az webapp config appsettings set -g HRMS -n hr-ats --settings \
   WEBSITES_PORT=8000 \
   DB_ENGINE=azure \
   DB_NAME=hr_recruitment \
-  DB_HOST=hr-turnb-sql01.database.windows.net \
+  DB_HOST=<your-sql-server>.database.windows.net \
   DB_PORT=1433 \
-  DB_USER=CloudSAaf7a4627 \
-  DB_PASSWORD='HrmsTurnb#2026' \
+  DB_USER='<your DB user>' \
+  DB_PASSWORD='<your DB password>' \
   DJANGO_DEBUG=False \
   DJANGO_SECRET_KEY='<paste the generated secret key>' \
-  DJANGO_ALLOWED_HOSTS='hr-ats.azurewebsites.net' \
-  DJANGO_CSRF_TRUSTED_ORIGINS='https://hr-ats.azurewebsites.net' \
+  DJANGO_ALLOWED_HOSTS='<your-app>.azurewebsites.net' \
+  DJANGO_CSRF_TRUSTED_ORIGINS='https://<your-app>.azurewebsites.net' \
   MEDIA_ROOT=/home/media
+
+# (use the real values from your local .env — never commit them)
 ```
 
 ## 4. Let the web app reach Azure SQL
