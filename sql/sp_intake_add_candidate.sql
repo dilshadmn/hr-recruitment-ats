@@ -22,7 +22,8 @@ CREATE PROCEDURE dbo.sp_intake_add_candidate
     @education    nvarchar(255)  = NULL,
     @cv_link      nvarchar(1000) = NULL,
     @source       nvarchar(255)  = NULL,
-    @mail_date    date           = NULL
+    @mail_date    date           = NULL,
+    @cv_summary   nvarchar(max)  = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -51,10 +52,12 @@ BEGIN
 
     INSERT INTO dbo.candidates_candidate
         (candidate_code, full_name, email, phone, qualification, resume_url,
-         source, status, is_duplicate, is_blacklisted, created_at, updated_at, job_id)
+         source, status, is_duplicate, is_blacklisted, is_on_hold,
+         created_at, updated_at, job_id, cv_summary)
     VALUES
         (@code, @full_name, @email_norm, @phone, @education, @cv_link,
-         ISNULL(@source, 'Careers'), @status, @is_dup, @is_black, @created, @now, @job_id);
+         ISNULL(@source, 'Careers'), @status, @is_dup, @is_black, 0,
+         @created, @now, @job_id, @cv_summary);
     DECLARE @cid bigint = SCOPE_IDENTITY();
 
     IF @is_dup = 1
