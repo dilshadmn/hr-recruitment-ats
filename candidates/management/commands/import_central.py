@@ -127,6 +127,14 @@ def _s(v, limit=None):
     return s[:limit] if limit else s
 
 
+def _norm_source(v):
+    """Consolidate any referral-type source into a single 'Employee reference'."""
+    s = _s(v, 255)
+    if s and 'ref' in s.lower():
+        return 'Employee reference'
+    return s
+
+
 def _as_datetime(v):
     if isinstance(v, datetime):
         return v if timezone.is_aware(v) else timezone.make_aware(v)
@@ -338,7 +346,7 @@ class Command(BaseCommand):
                 phone=_s(d.get('Mobile Number'), 20), role=norm_role(d.get('Role Selected')),
                 qual=_s(d.get('Education'), 255),
                 resume_url=_s(d.get('CV Link') or d.get('Hyper Link'), 1000),
-                source=_s(d.get('Source'), 255), status=status,
+                source=_norm_source(d.get('Source')), status=status,
                 appdate=_as_datetime(d.get('Mail Date')),
                 screened_on=_as_datetime(d.get('Screened On')), sl=sl, notes=notes,
                 hist_remark='Imported from Central Repository.xlsx', from_shortlisted=False))
@@ -368,7 +376,7 @@ class Command(BaseCommand):
                 phone=_s(d.get('Mobile Number'), 20), role=norm_role(d.get('Role Selected')),
                 qual=_s(d.get('Qualification') or d.get('Education'), 255),
                 resume_url=_s(d.get('CV Link') or d.get('Hyper Link'), 1000),
-                source=_s(d.get('Source'), 255), status=status,
+                source=_norm_source(d.get('Source')), status=status,
                 appdate=_as_datetime(d.get('Resume Received')),
                 screened_on=_as_datetime(d.get('Screened On')), sl=d,
                 notes=[t for t in (note_text,) if t],

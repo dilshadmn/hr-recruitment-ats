@@ -110,6 +110,23 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
     def get_tab(self):
         return self.request.GET.get('tab', 'open')
 
+    def _apply_flow(self, qs, flow):
+        R1 = Interview.RoundType.ROUND1
+        PASS = Interview.Result.PASS_
+        SCHED = Interview.Status.SCHEDULED
+        non_r1 = [t for t, _ in Interview.RoundType.choices if t != R1]
+        if flow == 'ever_shortlisted':
+            return qs.filter(history__new_status=STATUS.SHORTLISTED).distinct()
+        if flow == 'call_pending':
+            return qs.filter(status=STATUS.SHORTLISTED, communication_logs__isnull=True)
+        if flow == 'round1_cleared':
+            return qs.filter(interviews__round_type=R1, interviews__result=PASS).distinct()
+        if flow == 'interview_scheduled':
+            return qs.filter(interviews__status=SCHED).distinct()
+        if flow == 'interview_cleared':
+            return qs.filter(interviews__result=PASS, interviews__round_type__in=non_r1).distinct()
+        return qs
+
     def get_queryset(self):
         last_action = (CandidateStatusHistory.objects
                        .filter(candidate=OuterRef('pk')).order_by('-changed_at', '-id')
@@ -120,9 +137,16 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
         qs = (Candidate.objects.select_related('job')
               .annotate(last_action_at=Subquery(last_action),
                         interview_at=Subquery(next_interview)))
-        status = TAB_STATUS_MAP.get(self.get_tab())
-        if status is not None:
-            qs = qs.filter(status=status)
+
+        # A "flow" link (from the dashboard Overview) filters by a derived stage
+        # set and overrides the normal current-status tab filter.
+        flow = self.request.GET.get('flow')
+        if flow:
+            qs = self._apply_flow(qs, flow)
+        else:
+            status = TAB_STATUS_MAP.get(self.get_tab())
+            if status is not None:
+                qs = qs.filter(status=status)
 
         job_id = self.request.GET.get('job')
         if job_id:
@@ -151,7 +175,9 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['tab'] = self.get_tab()
+        # A flow view isn't a single status, so don't highlight/act on a tab.
+        ctx['tab'] = 'all' if self.request.GET.get('flow') else self.get_tab()
+        ctx['flow'] = self.request.GET.get('flow', '')
         ctx['tabs'] = REPOSITORY_TABS
         ctx['jobs'] = Job.objects.all()
         u = self.request.user

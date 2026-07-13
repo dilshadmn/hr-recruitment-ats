@@ -61,20 +61,21 @@ class HRDashboardView(GroupRequiredMixin, TemplateView):
         def cnt(qs):
             return qs.distinct().count()
 
+        # Each item: (label, value, querystring for the candidate list link).
         ctx['overview'] = [
-            ('Total Applicants', base.count(), None),
-            ('Open', base.filter(status=STATUS.OPEN).count(), 'open'),
-            ('Shortlisted', cnt(base.filter(history__new_status=STATUS.SHORTLISTED)), 'shortlisted'),
-            ('Call Pending', cnt(base.filter(status=STATUS.SHORTLISTED, communication_logs__isnull=True)), 'shortlisted'),
-            ('Round 1 Pending', base.filter(status=STATUS.ROUND1).count(), 'round1'),
-            ('Round 1 Cleared', cnt(base.filter(interviews__round_type=R1, interviews__result=PASS)), None),
-            ('Interview Pending', cnt(base.filter(status=STATUS.INTERVIEW).exclude(interviews__status=SCHED)), 'interview'),
-            ('Interview Scheduled', cnt(base.filter(interviews__status=SCHED)), 'interview'),
-            ('Interview Cleared', cnt(base.filter(interviews__result=PASS, interviews__round_type__in=NON_R1)), None),
-            ('Final Selection Pending', base.filter(status=STATUS.FINAL_SELECTION).count(), 'final_selection'),
-            ('Hired', base.filter(status=STATUS.HIRED).count(), 'hired'),
-            ('Rejected', base.filter(status=STATUS.REJECTED).count(), 'rejected'),
-            ('Blacklisted', base.filter(status=STATUS.BLACKLISTED).count(), 'blacklisted'),
+            ('Total Applicants', base.count(), 'tab=all'),
+            ('Open', base.filter(status=STATUS.OPEN).count(), 'tab=open'),
+            ('Shortlisted', cnt(base.filter(history__new_status=STATUS.SHORTLISTED)), 'flow=ever_shortlisted'),
+            ('Call Pending', cnt(base.filter(status=STATUS.SHORTLISTED, communication_logs__isnull=True)), 'flow=call_pending'),
+            ('Round 1 Pending', base.filter(status=STATUS.ROUND1).count(), 'tab=round1'),
+            ('Round 1 Cleared', cnt(base.filter(interviews__round_type=R1, interviews__result=PASS)), 'flow=round1_cleared'),
+            ('Interview Pending', cnt(base.filter(status=STATUS.INTERVIEW).exclude(interviews__status=SCHED)), 'tab=interview'),
+            ('Interview Scheduled', cnt(base.filter(interviews__status=SCHED)), 'flow=interview_scheduled'),
+            ('Interview Cleared', cnt(base.filter(interviews__result=PASS, interviews__round_type__in=NON_R1)), 'flow=interview_cleared'),
+            ('Final Selection Pending', base.filter(status=STATUS.FINAL_SELECTION).count(), 'tab=final_selection'),
+            ('Hired', base.filter(status=STATUS.HIRED).count(), 'tab=hired'),
+            ('Rejected', base.filter(status=STATUS.REJECTED).count(), 'tab=rejected'),
+            ('Blacklisted', base.filter(status=STATUS.BLACKLISTED).count(), 'tab=blacklisted'),
         ]
 
         ctx['upcoming_interviews'] = Interview.objects.select_related('candidate', 'interviewer').filter(

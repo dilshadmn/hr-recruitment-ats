@@ -73,20 +73,14 @@
   <div class="tab-pane fade {% if view == 'overview' %}show active{% endif %}" id="overviewPane">
     <p class="text-muted small mb-3">Stage flow across the whole pipeline (based on each candidate's history, not just their current status). Click a stage to open the matching candidate list.</p>
     <div class="row g-3">
-      {% for label, value, tab in overview %}
+      {% for label, value, params in overview %}
       <div class="col-md-3 col-sm-4 col-6">
-        {% if tab %}
-        <a href="{% url 'candidate_repository' %}?tab={{ tab }}{% if selected_job %}&job={{ selected_job }}{% endif %}" class="text-decoration-none">
+        <a href="{% url 'candidate_repository' %}?{{ params }}{% if selected_job %}&job={{ selected_job }}{% endif %}" class="text-decoration-none">
           <div class="card app-card stat-card p-3 text-center h-100 dash-clickable">
             <div class="text-muted small">{{ label }}</div><h2 class="mb-0">{{ value }}</h2>
             <div class="small text-primary-app">View &rarr;</div>
           </div>
         </a>
-        {% else %}
-        <div class="card app-card stat-card p-3 text-center h-100">
-          <div class="text-muted small">{{ label }}</div><h2 class="mb-0">{{ value }}</h2>
-        </div>
-        {% endif %}
       </div>
       {% endfor %}
     </div>
