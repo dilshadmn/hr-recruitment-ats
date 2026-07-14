@@ -39,9 +39,12 @@ def flow_filter(qs, flow):
         'ever_shortlisted': qs.filter(_reached(S.SHORTLISTED)),
 
         # ----- Call -----
-        'call_pending': qs.filter(status=S.SHORTLISTED, communication_logs__isnull=True),
-        # Cleared the call = positive call outcome OR ever reached Round 1
-        'shortlisted_after_call': qs.filter(Q(communication_logs__outcome=OUT.SHORTLISTED) | _reached(S.ROUND1)),
+        # Yet to Call = shortlisted and either no call logged yet, or last outcome
+        # was "Call back" (still needs to be reached)
+        'call_pending': qs.filter(status=S.SHORTLISTED).filter(
+            Q(communication_logs__isnull=True) | Q(communication_logs__outcome=OUT.CALLBACK)),
+        # Cleared the call = moved on to Round 1 (signalled by the status action)
+        'shortlisted_after_call': qs.filter(_reached(S.ROUND1)),
         'unable_to_connect': qs.filter(communication_logs__outcome=OUT.UNABLE),
         # Rejected after call = terminal, reached shortlist, never reached Round 1
         'rejected_after_call': qs.filter(status__in=TERMINAL).filter(_reached(S.SHORTLISTED)).exclude(_reached(S.ROUND1)),
