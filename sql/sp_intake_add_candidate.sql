@@ -79,6 +79,30 @@ BEGIN
         (old_status, new_status, remarks, changed_at, candidate_id, performed_by)
     VALUES ('', @status, 'Applied via careers intake (Logic App)', @created, @cid, 'Careers Intake');
 
+    -- Structured Education record: best-effort parse of "Degree - College - Year"
+    IF @education IS NOT NULL AND LEN(LTRIM(RTRIM(@education))) > 0
+    BEGIN
+        DECLARE @edu  nvarchar(255) = LTRIM(RTRIM(@education));
+        DECLARE @qual nvarchar(255), @inst nvarchar(255) = NULL, @yr int = NULL;
+        DECLARE @p1 int = CHARINDEX(' - ', @edu);
+        IF @p1 > 0
+        BEGIN
+            SET @qual = LTRIM(RTRIM(LEFT(@edu, @p1 - 1)));
+            SET @inst = LTRIM(RTRIM(SUBSTRING(@edu, @p1 + 3, 255)));
+            -- strip a trailing " - YYYY" into the year
+            IF LEN(@inst) >= 7 AND SUBSTRING(@inst, LEN(@inst) - 6, 3) = ' - '
+               AND RIGHT(@inst, 4) LIKE '[12][0-9][0-9][0-9]'
+            BEGIN
+                SET @yr   = CAST(RIGHT(@inst, 4) AS int);
+                SET @inst = LTRIM(RTRIM(LEFT(@inst, LEN(@inst) - 7)));
+            END
+        END
+        ELSE SET @qual = @edu;
+        INSERT INTO dbo.candidates_candidateeducation
+            (candidate_id, qualification, institution, year_completed)
+        VALUES (@cid, LEFT(ISNULL(NULLIF(@qual, ''), 'N/A'), 255), NULLIF(@inst, ''), @yr);
+    END
+
     SELECT @cid AS candidate_id, @code AS candidate_code, @status AS [status],
            @is_dup AS is_duplicate, @job_id AS job_id;
 END
