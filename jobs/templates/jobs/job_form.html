@@ -5,12 +5,17 @@
   <div class="col-lg-7">
     <div class="card app-card p-4">
       <h4 class="mb-3">{% if object %}Edit Vacancy{% else %}Create Vacancy{% endif %}</h4>
+      {% if form.errors %}
+      <div class="alert alert-danger">Please fix the highlighted fields and save again.</div>
+      {% endif %}
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="row g-3">
-          <div class="col-md-8"><label class="form-label">Title</label>{{ form.title }}</div>
+          <div class="col-md-8"><label class="form-label">Title</label>{{ form.title }}{{ form.title.errors }}</div>
           <div class="col-md-4"><label class="form-label">Status</label>{{ form.status }}</div>
           <div class="col-md-6"><label class="form-label">Location</label>{{ form.location }}</div>
+          <div class="col-md-3"><label class="form-label">Openings</label>{{ form.openings }}{{ form.openings.errors }}</div>
+          <div class="col-md-3"><label class="form-label">Opening Date</label>{{ form.opening_date }}</div>
           <div class="col-md-6"><label class="form-label">Closing Date</label>{{ form.closing_date }}</div>
           <div class="col-12"><label class="form-label">Description</label>{{ form.description }}</div>
           <div class="col-12"><label class="form-label">Requirements</label>{{ form.requirements }}</div>
