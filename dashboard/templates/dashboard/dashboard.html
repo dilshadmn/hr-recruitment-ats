@@ -65,6 +65,15 @@
   <form method="get" class="d-flex align-items-end gap-3">
     <input type="hidden" name="view" value="{{ view }}">
     <div>
+      <label class="form-label small text-muted mb-0">Job Code</label>
+      <select class="form-select form-select-sm" onchange="this.form.job.value=this.value; this.form.submit();" style="min-width: 130px;">
+        <option value="">All codes</option>
+        {% for j in jobs %}
+        <option value="{{ j.id }}" {% if selected_job == j.id|stringformat:'s' %}selected{% endif %}>{{ j.job_code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
       <label class="form-label small text-muted mb-0">Vacancy</label>
       <select name="job" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 240px;">
         <option value="">All vacancies</option>

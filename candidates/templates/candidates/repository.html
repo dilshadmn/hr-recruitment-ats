@@ -10,6 +10,15 @@
     <h3 class="mb-0">Candidate Repository</h3>
     <div class="d-flex align-items-end gap-3">
       <div>
+        <label class="form-label small text-muted mb-0">Job Code</label>
+        <select class="form-select form-select-sm" onchange="this.form.job.value=this.value; this.form.submit();" style="min-width: 130px;">
+          <option value="">All codes</option>
+          {% for job in jobs %}
+          <option value="{{ job.id }}" {% if request.GET.job == job.id|stringformat:"s" %}selected{% endif %}>{{ job.job_code }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
         <label class="form-label small text-muted mb-0">Vacancy</label>
         <select name="job" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 260px;">
           <option value="">All vacancies</option>
