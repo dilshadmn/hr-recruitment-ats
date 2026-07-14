@@ -54,6 +54,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'HR_management.middleware.NoCacheForAuthenticatedMiddleware',
 ]
 
 ROOT_URLCONF = 'HR_management.urls'
