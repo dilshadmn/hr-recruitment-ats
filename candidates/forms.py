@@ -41,7 +41,9 @@ class CandidateApplicationForm(BootstrapFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['resume_blob_url'].required = True
+        # Resume upload is mandatory only when applying (a new candidate),
+        # not when HR edits an existing one (who may only have a CV link).
+        self.fields['resume_blob_url'].required = not (self.instance and self.instance.pk)
         self._add_bootstrap_classes()
 
 
