@@ -52,6 +52,7 @@
           <th>Status</th>
           <th>Archived</th>
           <th>Applicants</th>
+          <th>Opening Date</th>
           <th>Closing Date</th>
           <th>Actions</th>
         </tr>
@@ -68,6 +69,7 @@
           </td>
           <td>{% if job.is_archived %}Yes{% else %}No{% endif %}</td>
           <td>{{ job.candidates.count }}</td>
+          <td>{{ job.opening_date|date:"d M Y"|default:"-" }}</td>
           <td>{{ job.closing_date|date:"d M Y"|default:"-" }}</td>
           <td class="text-nowrap">
             <a href="{% url 'job_edit' job.pk %}" class="btn btn-sm btn-outline-app">Edit</a>

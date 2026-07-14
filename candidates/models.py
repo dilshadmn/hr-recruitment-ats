@@ -1,11 +1,23 @@
-import uuid
-
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
 from jobs.models import Job
+
+
+def generate_candidate_code():
+    """Candidate code: ID + current year + 5-digit sequence, resetting per year.
+    e.g. ID202600001. Sequence continues from the highest code for this year."""
+    prefix = f"ID{timezone.now():%Y}"
+    last = (Candidate.objects.filter(candidate_code__startswith=prefix)
+            .order_by('-candidate_code').values_list('candidate_code', flat=True).first())
+    seq = 1
+    if last:
+        tail = last[len(prefix):]
+        if tail.isdigit():
+            seq = int(tail) + 1
+    return f"{prefix}{seq:05d}"
 
 
 def candidate_resume_path(instance, filename):
@@ -73,7 +85,7 @@ class Candidate(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.candidate_code:
-            self.candidate_code = f"CAND-{uuid.uuid4().hex[:10].upper()}"
+            self.candidate_code = generate_candidate_code()
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):

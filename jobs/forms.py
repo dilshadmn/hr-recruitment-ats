@@ -18,10 +18,12 @@ class BootstrapFormMixin:
 class JobForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Job
-        fields = ['title', 'location', 'openings', 'description', 'requirements', 'status', 'closing_date', 'jd_file']
+        fields = ['title', 'location', 'openings', 'description', 'requirements', 'status',
+                  'opening_date', 'closing_date', 'jd_file']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
             'requirements': forms.Textarea(attrs={'rows': 4}),
+            'opening_date': forms.DateInput(attrs={'type': 'date'}),
             'closing_date': forms.DateInput(attrs={'type': 'date'}),
         }
 

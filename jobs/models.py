@@ -16,6 +16,7 @@ class Job(models.Model):
     requirements = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
     created_on = models.DateTimeField(auto_now_add=True)
+    opening_date = models.DateField(blank=True, null=True)
     closing_date = models.DateField(blank=True, null=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True

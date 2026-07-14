@@ -48,7 +48,14 @@ BEGIN
         JOIN dbo.candidates_candidate c ON c.id = b.candidate_id
         WHERE LOWER(c.email) = @email_norm) THEN 1 ELSE 0 END;
     DECLARE @status nvarchar(30) = CASE WHEN @is_black = 1 THEN 'BLACKLISTED' ELSE 'OPEN' END;
-    DECLARE @code nvarchar(20) = 'CAND-' + UPPER(LEFT(REPLACE(CONVERT(varchar(36), NEWID()), '-', ''), 10));
+
+    -- Candidate code: ID + current year + 5-digit sequence (resets each year), e.g. ID202600001
+    DECLARE @prefix nvarchar(10) = 'ID' + CAST(YEAR(@now) AS nvarchar(4));
+    DECLARE @next int = ISNULL((
+        SELECT MAX(CAST(SUBSTRING(candidate_code, LEN(@prefix) + 1, 5) AS int))
+        FROM dbo.candidates_candidate
+        WHERE candidate_code LIKE @prefix + '[0-9][0-9][0-9][0-9][0-9]'), 0) + 1;
+    DECLARE @code nvarchar(20) = @prefix + RIGHT('00000' + CAST(@next AS nvarchar(5)), 5);
 
     INSERT INTO dbo.candidates_candidate
         (candidate_code, full_name, email, phone, qualification, resume_url,
