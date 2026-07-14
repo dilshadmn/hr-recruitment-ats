@@ -377,24 +377,28 @@ class CandidateStatusActionView(GroupRequiredMixin, View):
 
 
 class CandidateRevertLastActionView(GroupRequiredMixin, View):
-    """Undo the most recent status change, restoring the previous status and
-    logging the reversal (for accidental clicks)."""
+    """Undo the most recent status change: remove it from history entirely and
+    roll the candidate back, so the dashboard funnel no longer counts it."""
     allowed_groups = (HR_ADMIN, RECRUITER)
 
     def post(self, request, pk):
         candidate = get_object_or_404(Candidate, pk=pk)
         last = candidate.history.order_by('-changed_at', '-id').first()
         next_url = request.POST.get('next') or reverse('candidate_timeline', args=[pk])
+        # keep the very first 'Applied' entry (old_status is blank) — nothing to undo before it
         if not last or not last.old_status:
-            messages.error(request, 'There is no previous status to revert to.')
+            messages.error(request, 'There is no action to undo.')
             return redirect(next_url)
-        labels = dict(Candidate.Status.choices)
-        note = (f'Reverted accidental change '
-                f'({labels.get(last.new_status, last.new_status)} -> '
-                f'{labels.get(last.old_status, last.old_status)}).')
-        services.change_status(candidate, last.old_status, user=request.user,
-                               remarks=note, performed_by=_performed_by(request))
-        messages.success(request, f'Reverted {candidate.full_name} to "{candidate.get_status_display()}".')
+        prev_status, undone = last.old_status, last.new_status
+        last.delete()  # remove the accidental transition from history
+        if undone == STATUS.BLACKLISTED:  # unwind blacklist side-effects
+            candidate.is_blacklisted = False
+            bl = candidate.blacklist_entries.order_by('-blacklisted_at').first()
+            if bl:
+                bl.delete()
+        candidate.status = prev_status
+        candidate.save(update_fields=['status', 'is_blacklisted', 'updated_at'])
+        messages.success(request, f'Last action undone — {candidate.full_name} is back to "{candidate.get_status_display()}".')
         return redirect(next_url)
 
 
