@@ -28,6 +28,10 @@
 </nav>
 
 <main class="container py-4">
+  <button type="button" id="backBtn" class="btn btn-sm btn-outline-app mb-3" onclick="history.back()">
+    <i class="bi bi-arrow-left"></i> Back
+  </button>
+  <script>(function(){var b=document.getElementById('backBtn'); if(b && window.history.length<=1){b.style.display='none';}})();</script>
   {% if messages %}
     {% for message in messages %}
       <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
