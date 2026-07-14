@@ -155,10 +155,10 @@
 
     <div class="card app-card p-4 mb-3">
       <h5 class="mb-3">Notes</h5>
-      <form method="post" action="{% url 'candidate_add_note' candidate.pk %}" class="mb-3">
+      <form method="post" action="{% url 'candidate_add_note' candidate.pk %}" class="mb-3 js-autosave">
         {% csrf_token %}
         {{ note_form.text }}
-        <button type="submit" class="btn btn-sm btn-fill-app mt-2">Add Note</button>
+        <div class="text-end mt-2"><button type="submit" class="btn btn-sm btn-fill-app js-savebtn">Save Note</button></div>
       </form>
       {% for n in notes %}
         <div class="mb-2 pb-2 border-bottom">
@@ -170,14 +170,14 @@
 
     <div class="card app-card p-4 mb-3">
       <h5 class="mb-3">Communication Log</h5>
-      <form method="post" action="{% url 'candidate_add_log' candidate.pk %}" class="mb-3">
+      <form method="post" action="{% url 'candidate_add_log' candidate.pk %}" class="mb-3 js-autosave">
         {% csrf_token %}
         <div class="row g-2">
           <div class="col-6">{{ comm_form.channel }}</div>
           <div class="col-6">{{ comm_form.outcome }}</div>
           <div class="col-12 mt-2">{{ comm_form.message }}</div>
         </div>
-        <button type="submit" class="btn btn-sm btn-fill-app mt-2">Add Log</button>
+        <div class="text-end mt-2"><button type="submit" class="btn btn-sm btn-fill-app js-savebtn">Save Log</button></div>
       </form>
       {% for l in communication_logs %}
         <div class="mb-2 pb-2 border-bottom">
@@ -190,7 +190,7 @@
 
     <div class="card app-card p-4">
       <h5 class="mb-3">Update Status</h5>
-      <form method="post" action="{% url 'candidate_set_status' candidate.pk %}">
+      <form method="post" action="{% url 'candidate_set_status' candidate.pk %}" class="js-autosave">
         {% csrf_token %}
         <div class="row g-2">
           <div class="col-12">
@@ -209,9 +209,24 @@
             <textarea name="reason" class="form-control form-control-sm" rows="2" placeholder="Remarks / reason (optional)"></textarea>
           </div>
         </div>
-        <button type="submit" class="btn btn-sm btn-fill-app mt-2">Apply Action</button>
+        <div class="text-end mt-2"><button type="submit" class="btn btn-sm btn-fill-app js-savebtn">Save Action</button></div>
       </form>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Hide each Save button until the user types/selects something (so they don't
+// forget to save). Fail-safe: if JS doesn't run, the buttons stay visible.
+document.querySelectorAll('.js-autosave').forEach(function (form) {
+  var btn = form.querySelector('.js-savebtn');
+  if (!btn) return;
+  btn.classList.add('d-none');
+  var show = function () { btn.classList.remove('d-none'); };
+  form.addEventListener('input', show);
+  form.addEventListener('change', show);
+});
+</script>
 {% endblock %}

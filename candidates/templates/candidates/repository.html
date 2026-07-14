@@ -48,8 +48,13 @@
       <input type="text" name="q" value="{{ request.GET.q|default:'' }}" class="form-control" placeholder="Name or email">
     </div>
     <div class="col-md-2">
-      <label class="form-label small text-muted mb-0">Skill</label>
-      <input type="text" name="skill" value="{{ request.GET.skill|default:'' }}" class="form-control" placeholder="e.g. Python">
+      <label class="form-label small text-muted mb-0">Source</label>
+      <select name="source" class="form-select" onchange="this.form.submit()">
+        <option value="">All sources</option>
+        {% for s in sources %}
+        <option value="{{ s }}" {% if request.GET.source == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div class="col-md-2">
       <label class="form-label small text-muted mb-0">Min Exp.</label>

@@ -145,9 +145,9 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
         if self.request.GET.get('scope') == 'open':
             qs = qs.filter(job__status=Job.Status.OPEN, job__is_archived=False)
 
-        skill = self.request.GET.get('skill')
-        if skill:
-            qs = qs.filter(skills__icontains=skill)
+        source = self.request.GET.get('source')
+        if source:
+            qs = qs.filter(source=source)
 
         min_experience = self.request.GET.get('min_experience')
         if min_experience:
@@ -178,6 +178,8 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
             job_list = job_list.filter(status=Job.Status.OPEN, is_archived=False)
         ctx['jobs'] = job_list
         ctx['scope'] = scope
+        ctx['sources'] = (Candidate.objects.exclude(source__isnull=True).exclude(source='')
+                          .values_list('source', flat=True).distinct().order_by('source'))
         # every current filter except the tab, so switching tabs keeps the vacancy/scope/search
         params = self.request.GET.copy()
         params.pop('tab', None)
