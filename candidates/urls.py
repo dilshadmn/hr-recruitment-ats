@@ -34,6 +34,8 @@ urlpatterns = [
         target_status=STATUS.REJECTED, require_reason=False), name='candidate_reject'),
     path('hr/candidates/<int:pk>/blacklist/', views.CandidateStatusActionView.as_view(
         target_status=STATUS.BLACKLISTED, require_reason=True), name='candidate_blacklist'),
+    path('hr/candidates/<int:pk>/screening-hold/', views.CandidateStatusActionView.as_view(
+        target_status=STATUS.SCREENING_HOLD), name='candidate_screening_hold'),
 
     path('hr/candidates/<int:pk>/revert/', views.CandidateRevertLastActionView.as_view(), name='candidate_revert'),
     path('hr/candidates/<int:pk>/delete/', views.CandidateDeleteView.as_view(), name='candidate_delete'),

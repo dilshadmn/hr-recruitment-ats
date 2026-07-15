@@ -208,3 +208,20 @@
   </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+// Keep the Summary/Overview choice in the URL + filter form, so applying a
+// filter stays on the current view and the browser back button returns to it.
+document.querySelectorAll('#dashTabs button[data-bs-toggle="tab"]').forEach(function (btn) {
+  btn.addEventListener('shown.bs.tab', function (e) {
+    var v = e.target.getAttribute('data-bs-target') === '#overviewPane' ? 'overview' : 'summary';
+    var vi = document.querySelector('input[name="view"]');
+    if (vi) { vi.value = v; }
+    var url = new URL(window.location);
+    url.searchParams.set('view', v);
+    window.history.replaceState(null, '', url);
+  });
+});
+</script>
+{% endblock %}

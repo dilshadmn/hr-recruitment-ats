@@ -35,12 +35,21 @@
     </div>
   </div>
 
+  {% if flow %}
+  <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+    <span class="text-muted small text-uppercase">Showing</span>
+    <h5 class="mb-0" style="color: var(--dark-green);">{{ flow_title|default:"Filtered list" }}</h5>
+    <a href="{% url 'hr_dashboard' %}?view=overview{% if request.GET.job %}&job={{ request.GET.job }}{% endif %}"
+       class="btn btn-sm btn-outline-app ms-auto"><i class="bi bi-arrow-left"></i> Back to Overview</a>
+  </div>
+  {% else %}
   <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto">
     {% for key, label, status in tabs %}
     <li class="nav-item"><a class="nav-link text-nowrap {% if tab == key %}active{% endif %}"
         href="?tab={{ key }}{% if preserved_qs %}&{{ preserved_qs }}{% endif %}">{{ label }}</a></li>
     {% endfor %}
   </ul>
+  {% endif %}
 
   <div class="row g-2 mb-3 align-items-end">
     <div class="col-md-3">
@@ -99,10 +108,9 @@
             {% if c.is_blacklisted and c.status != 'BLACKLISTED' %}<span class="badge-status badge-blacklisted ms-1">Blacklisted</span>{% endif %}</td>
           <td class="text-nowrap">
             <a href="{% url 'candidate_timeline' c.id %}" class="btn btn-sm btn-outline-app">View</a>
-            {% if c.resume_url %}<a href="{{ c.resume_url }}" target="_blank" class="btn btn-sm btn-outline-app">CV</a>
-            {% elif c.resume_blob_url %}<a href="{{ c.resume_blob_url.url }}" target="_blank" class="btn btn-sm btn-outline-app">CV</a>{% endif %}
             {% if tab == 'open' %}
               <button type="button" class="btn btn-sm btn-fill-app act" data-action="{% url 'candidate_shortlist' c.id %}" data-title="Shortlist {{ c.full_name }}">Shortlist</button>
+              <button type="button" class="btn btn-sm btn-warning act" data-action="{% url 'candidate_screening_hold' c.id %}" data-title="Put {{ c.full_name }} on Screening Hold" data-btn="btn-warning" data-label="Screening Hold">Screening Hold</button>
             {% elif tab == 'shortlisted' %}
               <button type="button" class="btn btn-sm btn-fill-app act" data-action="{% url 'candidate_round1' c.id %}" data-title="Move {{ c.full_name }} to Round 1">Move to Round 1</button>
             {% elif tab == 'round1' %}
@@ -112,8 +120,8 @@
             {% elif tab == 'final_selection' %}
               <button type="button" class="btn btn-sm btn-fill-app act" data-action="{% url 'candidate_hire' c.id %}" data-title="Hire {{ c.full_name }}?">Hire</button>
             {% endif %}
-            {% if tab == 'rejected' %}
-              <button type="button" class="btn btn-sm btn-fill-app act" data-action="{% url 'candidate_shortlist' c.id %}" data-title="Move {{ c.full_name }} back to Shortlisted" data-require="1" data-msg="Decision changed? This moves the candidate from Rejected back into the Shortlisted pipeline.">Move to Shortlisted</button>
+            {% if tab == 'rejected' or tab == 'screening_hold' %}
+              <button type="button" class="btn btn-sm btn-fill-app act" data-action="{% url 'candidate_shortlist' c.id %}" data-title="Move {{ c.full_name }} to Shortlisted" data-msg="Decision changed? This moves the candidate into the Shortlisted pipeline.">Move to Shortlisted</button>
             {% endif %}
             {% if tab in 'open,shortlisted,round1,interview,final_selection' %}
               <button type="button" class="btn btn-sm btn-outline-danger act" data-action="{% url 'candidate_reject' c.id %}" data-title="Reject {{ c.full_name }}" data-require="1" data-btn="btn-outline-danger" data-label="Reject">Reject</button>

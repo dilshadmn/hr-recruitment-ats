@@ -39,6 +39,7 @@ class Candidate(models.Model):
         HIRED = 'HIRED', 'Hired'
         REJECTED = 'REJECTED', 'Rejected'
         BLACKLISTED = 'BLACKLISTED', 'Blacklisted'
+        SCREENING_HOLD = 'SCREENING_HOLD', 'Screening Hold'
 
     candidate_code = models.CharField(max_length=20, unique=True, blank=True)
     job = models.ForeignKey(Job, on_delete=models.SET_NULL, null=True, blank=True, related_name='candidates')

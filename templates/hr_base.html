@@ -45,7 +45,7 @@
 </nav>
 
 <main class="container-fluid py-4">
-  <button type="button" id="backBtn" class="btn btn-sm btn-outline-app mb-3" onclick="history.back()">
+  <button type="button" id="backBtn" class="btn btn-sm btn-outline-app mb-3" onclick="goBack()">
     <i class="bi bi-arrow-left"></i> Back
   </button>
   {% if messages %}
@@ -60,10 +60,22 @@
 </main>
 
 <script>
-  // Hide the Back button when there's no previous page in this tab's history.
+  // Go back to the page we came from: prefer the same-site referrer (reliable
+  // even after a POST-redirect), then browser history, then the dashboard.
+  function goBack() {
+    var r = document.referrer;
+    if (r && r.indexOf(window.location.origin + '/') === 0 && r !== window.location.href) {
+      window.location.href = r;
+    } else if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = '/hr/dashboard/';
+    }
+  }
+  // Hide Back only when there is genuinely nowhere to go back to.
   (function () {
     var b = document.getElementById('backBtn');
-    if (b && window.history.length <= 1) { b.style.display = 'none'; }
+    if (b && window.history.length <= 1 && !document.referrer) { b.style.display = 'none'; }
   })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

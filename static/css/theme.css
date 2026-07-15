@@ -163,6 +163,7 @@ table.dataTable tbody td {
 .badge-shortlisted { background-color: #198754; color: #fff; }
 .badge-rejected { background-color: #dc3545; color: #fff; }
 .badge-blacklisted { background-color: #212529; color: #fff; }
+.badge-screening_hold { background-color: #e08a00; color: #fff; }
 .badge-hired { background-color: var(--dark-green); color: #fff; }
 .badge-draft { background-color: #6c757d; color: #fff; }
 .badge-sent { background-color: #0d6efd; color: #fff; }

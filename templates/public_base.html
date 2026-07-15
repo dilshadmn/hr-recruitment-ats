@@ -28,10 +28,13 @@
 </nav>
 
 <main class="container py-4">
-  <button type="button" id="backBtn" class="btn btn-sm btn-outline-app mb-3" onclick="history.back()">
+  <button type="button" id="backBtn" class="btn btn-sm btn-outline-app mb-3" onclick="goBack()">
     <i class="bi bi-arrow-left"></i> Back
   </button>
-  <script>(function(){var b=document.getElementById('backBtn'); if(b && window.history.length<=1){b.style.display='none';}})();</script>
+  <script>
+    function goBack(){var r=document.referrer; if(r && r.indexOf(location.origin+'/')===0 && r!==location.href){location.href=r;}else if(window.history.length>1){history.back();}else{location.href='/';}}
+    (function(){var b=document.getElementById('backBtn'); if(b && window.history.length<=1 && !document.referrer){b.style.display='none';}})();
+  </script>
   {% if messages %}
     {% for message in messages %}
       <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">

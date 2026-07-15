@@ -41,8 +41,21 @@ REPOSITORY_TABS = [
     ('hired', 'Hired', STATUS.HIRED),
     ('rejected', 'Rejected', STATUS.REJECTED),
     ('blacklisted', 'Blacklisted', STATUS.BLACKLISTED),
+    ('screening_hold', 'Screening Hold', STATUS.SCREENING_HOLD),
 ]
 TAB_STATUS_MAP = {key: status for key, _, status in REPOSITORY_TABS}
+
+# Readable titles for the dashboard funnel drill-downs (?flow=…)
+FLOW_TITLES = {
+    'all': 'All Candidates', 'open': 'Screening Pending', 'unfit': 'Unfit Resumes',
+    'ever_shortlisted': 'Screened & Shortlisted', 'call_pending': 'Yet to Call',
+    'shortlisted_after_call': 'Shortlisted After Call', 'unable_to_connect': 'Unable to Connect',
+    'r1_yet': 'Round 1 — Yet to Schedule', 'r1_cleared': 'Round 1 Cleared',
+    'r1_scheduled': 'Round 1 Scheduled', 'r1_no_show': 'Round 1 — Not Turned Up',
+    'r2_yet': 'Round 2 — Yet to Schedule', 'r2_cleared': 'Round 2 Cleared',
+    'r2_scheduled': 'Round 2 Scheduled', 'r2_no_show': 'Round 2 — Not Turned Up',
+    'on_hold': 'On Hold', 'hired': 'Hired', 'rejected': 'Rejected', 'blacklisted': 'Blacklisted',
+}
 
 
 class ApplicationCreateView(View):
@@ -171,6 +184,7 @@ class CandidateRepositoryListView(GroupRequiredMixin, ListView):
         # A flow view isn't a single status, so don't highlight/act on a tab.
         ctx['tab'] = 'all' if self.request.GET.get('flow') else self.get_tab()
         ctx['flow'] = self.request.GET.get('flow', '')
+        ctx['flow_title'] = FLOW_TITLES.get(ctx['flow'])
         ctx['tabs'] = REPOSITORY_TABS
         scope = self.request.GET.get('scope', '')
         job_list = Job.objects.all().order_by('title')
