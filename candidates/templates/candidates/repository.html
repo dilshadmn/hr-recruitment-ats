@@ -110,7 +110,7 @@
             <a href="{% url 'candidate_timeline' c.id %}" class="btn btn-sm btn-outline-app">View</a>
             {% if tab == 'open' %}
               <button type="button" class="btn btn-sm btn-fill-app act" data-action="{% url 'candidate_shortlist' c.id %}" data-title="Shortlist {{ c.full_name }}">Shortlist</button>
-              <button type="button" class="btn btn-sm btn-warning act" data-action="{% url 'candidate_screening_hold' c.id %}" data-title="Put {{ c.full_name }} on Screening Hold" data-btn="btn-warning" data-label="Screening Hold">Screening Hold</button>
+              <button type="button" class="btn btn-sm btn-hold act" data-action="{% url 'candidate_screening_hold' c.id %}" data-title="Put {{ c.full_name }} on Screening Hold" data-btn="btn-hold" data-label="Screening Hold">Screening Hold</button>
             {% elif tab == 'shortlisted' %}
               <button type="button" class="btn btn-sm btn-fill-app act" data-action="{% url 'candidate_round1' c.id %}" data-title="Move {{ c.full_name }} to Round 1">Move to Round 1</button>
             {% elif tab == 'round1' %}

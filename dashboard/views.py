@@ -78,6 +78,7 @@ class HRDashboardView(GroupRequiredMixin, TemplateView):
         r2_cleared, r2_sched, r2_ns, r2_yet, rej_r2 = (
             fc('r2_cleared'), fc('r2_scheduled'), fc('r2_no_show'), fc('r2_yet'), fc('rejected_after_round2'))
         on_hold, hired, rej_final = fc('on_hold'), fc('hired'), fc('rejected_after_final')
+        screening_hold = fc('screening_hold')
 
         ctx['funnel_top'] = {'total': base.count(), 'requirement': requirement, 'unfit': unfit}
         # Corner "total" = everyone who got a decision at that stage (cleared + rejected-there)
@@ -85,7 +86,7 @@ class HRDashboardView(GroupRequiredMixin, TemplateView):
             {'name': 'Screening',
              'pending': ('Screening Pending', fc('open'), 'open'),
              'cleared': ('Screened & Shortlisted', shortlisted, shortlisted + unfit, 'ever_shortlisted'),
-             'drops': []},
+             'drops': [('Screening Hold', screening_hold, 'screening_hold')]},
             {'name': 'Call',
              'pending': ('Yet to Call', yet_call, 'call_pending'),
              'cleared': ('Shortlisted After Call', s_after_call, s_after_call + rej_call, 'shortlisted_after_call'),

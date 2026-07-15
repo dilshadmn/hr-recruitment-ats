@@ -74,6 +74,7 @@ def flow_filter(qs, flow):
         # ----- terminal (used by the candidate list tabs) -----
         'rejected': qs.filter(status=S.REJECTED),
         'blacklisted': qs.filter(status=S.BLACKLISTED),
+        'screening_hold': qs.filter(status=S.SCREENING_HOLD),
     }
     result = table.get(flow)
     if result is None:

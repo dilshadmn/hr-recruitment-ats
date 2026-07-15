@@ -60,22 +60,16 @@
 </main>
 
 <script>
-  // Go back to the page we came from: prefer the same-site referrer (reliable
-  // even after a POST-redirect), then browser history, then the dashboard.
+  // Step back through the real browser history one entry per click, so repeated
+  // Back presses walk back the exact path you took.
   function goBack() {
-    var r = document.referrer;
-    if (r && r.indexOf(window.location.origin + '/') === 0 && r !== window.location.href) {
-      window.location.href = r;
-    } else if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.href = '/hr/dashboard/';
-    }
+    if (window.history.length > 1) { window.history.back(); }
+    else { window.location.href = '/hr/dashboard/'; }
   }
   // Hide Back only when there is genuinely nowhere to go back to.
   (function () {
     var b = document.getElementById('backBtn');
-    if (b && window.history.length <= 1 && !document.referrer) { b.style.display = 'none'; }
+    if (b && window.history.length <= 1) { b.style.display = 'none'; }
   })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

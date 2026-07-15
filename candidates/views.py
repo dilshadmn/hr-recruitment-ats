@@ -55,6 +55,7 @@ FLOW_TITLES = {
     'r2_yet': 'Round 2 — Yet to Schedule', 'r2_cleared': 'Round 2 Cleared',
     'r2_scheduled': 'Round 2 Scheduled', 'r2_no_show': 'Round 2 — Not Turned Up',
     'on_hold': 'On Hold', 'hired': 'Hired', 'rejected': 'Rejected', 'blacklisted': 'Blacklisted',
+    'screening_hold': 'Screening Hold',
 }
 
 

@@ -163,7 +163,9 @@ table.dataTable tbody td {
 .badge-shortlisted { background-color: #198754; color: #fff; }
 .badge-rejected { background-color: #dc3545; color: #fff; }
 .badge-blacklisted { background-color: #212529; color: #fff; }
-.badge-screening_hold { background-color: #e08a00; color: #fff; }
+.badge-screening_hold { background-color: #f6e6a8; color: #6b5200; }
+.btn-hold { background-color: #fbf1c9; color: #7a5c00; border: 1.5px solid #ecd9a0; }
+.btn-hold:hover { background-color: #f4e5a0; color: #5f4700; border-color: #e0c97e; }
 .badge-hired { background-color: var(--dark-green); color: #fff; }
 .badge-draft { background-color: #6c757d; color: #fff; }
 .badge-sent { background-color: #0d6efd; color: #fff; }
